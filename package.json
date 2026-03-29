@@ -1,0 +1,14 @@
+{
+  "name": "whatagent-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/api",
+    "packages/sdk",
+    "packages/mcp"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "dev": "npm run dev --workspace=packages/api"
+  }
+}
