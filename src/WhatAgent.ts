@@ -1,4 +1,12 @@
-import type { WhatAgentConfig, SendMessageOptions, SendMessageResult } from './types.js';
+import type {
+  WhatAgentConfig,
+  SendTextOptions,
+  SendTemplateOptions,
+  SendMessageResult,
+} from './types.js';
+
+// Keep the old name working
+export type { SendTextOptions as SendMessageOptions } from './types.js';
 
 const DEFAULT_API_VERSION = 'v19.0';
 const BASE_URL = 'https://graph.facebook.com';
@@ -14,16 +22,34 @@ export class WhatAgent {
     this.apiVersion = config.apiVersion ?? DEFAULT_API_VERSION;
   }
 
-  async sendMessage(options: SendMessageOptions): Promise<SendMessageResult> {
-    const url = `${BASE_URL}/${this.apiVersion}/${this.phoneNumberId}/messages`;
-
-    const body = {
+  /** Send a plain text message */
+  async sendMessage(options: SendTextOptions): Promise<SendMessageResult> {
+    return this.post({
       messaging_product: 'whatsapp',
       recipient_type: 'individual',
       to: options.to,
       type: 'text',
       text: { body: options.text },
-    };
+    });
+  }
+
+  /** Send a pre-approved template message */
+  async sendTemplate(options: SendTemplateOptions): Promise<SendMessageResult> {
+    return this.post({
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to: options.to,
+      type: 'template',
+      template: {
+        name: options.templateName,
+        language: { code: options.languageCode },
+        ...(options.components ? { components: options.components } : {}),
+      },
+    });
+  }
+
+  private async post(body: unknown): Promise<SendMessageResult> {
+    const url = `${BASE_URL}/${this.apiVersion}/${this.phoneNumberId}/messages`;
 
     const response = await fetch(url, {
       method: 'POST',

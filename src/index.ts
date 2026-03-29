@@ -3,4 +3,12 @@
  */
 
 export { WhatAgent } from './WhatAgent.js';
-export type { WhatAgentConfig, SendMessageOptions, SendMessageResult } from './types.js';
+export type {
+  WhatAgentConfig,
+  SendTextOptions,
+  SendTemplateOptions,
+  SendMessageOptions,
+  SendMessageResult,
+  TemplateComponent,
+  TemplateParameter,
+} from './types.js';
