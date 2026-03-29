@@ -11,8 +11,11 @@
       "types": "./dist/index.d.ts"
     }
   },
+  "workspaces": ["packages/*"],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && npm run build --workspace=packages/mcp",
+    "build:sdk": "tsc",
+    "build:mcp": "npm run build --workspace=packages/mcp",
     "lint": "eslint src --ext .ts",
     "test": "node --experimental-vm-modules node_modules/.bin/jest",
     "dev": "tsc --watch",

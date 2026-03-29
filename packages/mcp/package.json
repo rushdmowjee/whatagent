@@ -1,0 +1,27 @@
+{
+  "name": "@whatagent/mcp",
+  "version": "0.1.0",
+  "description": "MCP server for WhatAgent — send WhatsApp messages from Claude Code, Cursor, and Windsurf.",
+  "type": "module",
+  "bin": {
+    "whatagent-mcp": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js"
+  },
+  "keywords": ["whatsapp", "mcp", "claude", "cursor", "model-context-protocol"],
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.10.2",
+    "whatagent": "file:../..",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "typescript": "^5.4.3"
+  }
+}

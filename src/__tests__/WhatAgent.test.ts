@@ -1,6 +1,11 @@
+import { jest, describe, it, expect, afterEach } from '@jest/globals';
 import { WhatAgent } from '../WhatAgent.js';
 
 describe('WhatAgent', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   it('instantiates with required config', () => {
     const agent = new WhatAgent({
       accessToken: 'test-token',
@@ -15,11 +20,11 @@ describe('WhatAgent', () => {
       phoneNumberId: '123456789',
     });
 
-    global.fetch = jest.fn().mockResolvedValue({
+    jest.spyOn(global, 'fetch').mockResolvedValue({
       ok: false,
       status: 401,
       text: async () => '{"error":{"message":"Invalid OAuth access token"}}',
-    }) as jest.Mock;
+    } as unknown as Response);
 
     const result = await agent.sendMessage({ to: '+14155552671', text: 'Hello' });
 
@@ -33,10 +38,10 @@ describe('WhatAgent', () => {
       phoneNumberId: '123456789',
     });
 
-    global.fetch = jest.fn().mockResolvedValue({
+    jest.spyOn(global, 'fetch').mockResolvedValue({
       ok: true,
       json: async () => ({ messages: [{ id: 'wamid.test123' }] }),
-    }) as jest.Mock;
+    } as unknown as Response);
 
     const result = await agent.sendMessage({ to: '+14155552671', text: 'Hello' });
 
