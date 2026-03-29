@@ -15,7 +15,8 @@
     "build": "tsc",
     "lint": "eslint src --ext .ts",
     "test": "node --experimental-vm-modules node_modules/.bin/jest",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "send": "node dist/send.js"
   },
   "keywords": ["whatsapp", "messaging", "sdk", "api"],
   "license": "MIT",
