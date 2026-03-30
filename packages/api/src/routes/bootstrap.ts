@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getDb } from '../db/client';
 import { encrypt, generateApiKey, generateId, hashApiKey } from '../services/crypto';
 import { validateCredentials } from '../services/meta';
+import { captureAccountCreated } from '../services/analytics';
 
 export const bootstrapRouter = Router();
 
@@ -61,6 +62,12 @@ bootstrapRouter.post('/', async (req: Request, res: Response): Promise<void> => 
     `INSERT INTO api_keys (id, key_hash, account_id, name, created_at) VALUES ($1, $2, $3, $4, NOW())`,
     [keyId, keyHash, accountId, key_name ?? 'default']
   );
+
+  captureAccountCreated(accountId, {
+    phone_number_id,
+    waba_id,
+    display_phone_number: validation.displayPhoneNumber,
+  });
 
   res.status(201).json({
     account_id: accountId,

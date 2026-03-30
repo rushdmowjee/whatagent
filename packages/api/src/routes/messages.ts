@@ -4,6 +4,7 @@ import { AuthedRequest } from '../middleware/auth';
 import { getDb } from '../db/client';
 import { generateId, decrypt } from '../services/crypto';
 import { sendTextMessage, sendTemplateMessage, sendImageMessage } from '../services/meta';
+import { captureMessageSent } from '../services/analytics';
 
 export const messagesRouter = Router();
 
@@ -71,11 +72,19 @@ messagesRouter.post('/', (async (req: Request, res: Response): Promise<void> => 
 
     const metaMessageId = metaResponse.messages[0]?.id;
 
+    const prevCountResult = await db.query(
+      `SELECT COUNT(*) AS cnt FROM messages WHERE account_id = $1 AND direction = 'outbound'`,
+      [authed.accountId]
+    );
+    const isFirst = parseInt(prevCountResult.rows[0].cnt, 10) === 0;
+
     await db.query(
       `INSERT INTO messages (id, account_id, direction, to_number, type, body, template_name, meta_message_id, status, sent_at, created_at, updated_at)
        VALUES ($1, $2, 'outbound', $3, $4, $5, $6, $7, 'sent', NOW(), NOW(), NOW())`,
       [messageId, authed.accountId, data.to, data.type, data.type === 'text' ? data.text : null, data.type === 'template' ? data.template.name : null, metaMessageId]
     );
+
+    captureMessageSent(authed.accountId, isFirst, { message_type: data.type, to: data.to });
 
     res.status(201).json({ id: messageId, status: 'sent', to: data.to, meta_message_id: metaMessageId });
   } catch (err: unknown) {
