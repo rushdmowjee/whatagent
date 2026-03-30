@@ -1,0 +1,1513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WhatAgent Setup Wizard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@300;400;500;600&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #080e0a;
+    --bg2:       #0e1810;
+    --bg3:       #141f15;
+    --border:    rgba(37,211,102,0.15);
+    --border2:   rgba(37,211,102,0.30);
+    --green:     #25D366;
+    --green2:    #1aad52;
+    --green-glow: rgba(37,211,102,0.20);
+    --text:      #e8f0ea;
+    --muted:     #7a9c80;
+    --code-bg:   #0a1a0c;
+    --warn:      #f4c430;
+    --err:       #ff5b5b;
+    --radius:    12px;
+    --radius2:   8px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Geist', sans-serif;
+    font-size: 15px;
+    line-height: 1.65;
+    min-height: 100vh;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* Custom cursor */
+  .cursor {
+    width: 10px; height: 10px;
+    background: var(--green);
+    border-radius: 50%;
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: transform 0.08s ease, opacity 0.2s;
+    mix-blend-mode: screen;
+  }
+  .cursor-ring {
+    width: 28px; height: 28px;
+    border: 1.5px solid var(--green);
+    border-radius: 50%;
+    position: fixed;
+    pointer-events: none;
+    z-index: 9998;
+    transform: translate(-50%, -50%);
+    opacity: 0.4;
+    transition: transform 0.18s ease, width 0.2s, height 0.2s, opacity 0.2s;
+  }
+  .cursor-ring.hover { width: 40px; height: 40px; opacity: 0.6; }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(37,211,102,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(37,211,102,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Radial glow behind wizard */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 700px; height: 700px;
+    background: radial-gradient(circle, rgba(37,211,102,0.06) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page-wrap {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 20px 80px;
+  }
+
+  /* Header */
+  .site-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 56px;
+  }
+  .logo-mark {
+    width: 32px; height: 32px;
+    background: var(--green);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    box-shadow: 0 0 20px var(--green-glow);
+  }
+  .logo-text {
+    font-family: 'Geist Mono', monospace;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: var(--green);
+    opacity: 0.9;
+  }
+
+  /* Wizard container */
+  .wizard {
+    width: 100%;
+    max-width: 660px;
+  }
+
+  /* Progress steps */
+  .progress-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    margin-bottom: 48px;
+    position: relative;
+  }
+  .step-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    z-index: 1;
+  }
+  .step-bubble {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    background: var(--bg2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Geist Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    transition: all 0.35s ease;
+    position: relative;
+  }
+  .step-bubble .check { display: none; }
+  .step-node.active .step-bubble {
+    border-color: var(--green);
+    color: var(--green);
+    box-shadow: 0 0 16px var(--green-glow), inset 0 0 10px rgba(37,211,102,0.05);
+  }
+  .step-node.done .step-bubble {
+    background: var(--green);
+    border-color: var(--green);
+    color: var(--bg);
+    box-shadow: 0 0 20px var(--green-glow);
+  }
+  .step-node.done .step-bubble .num { display: none; }
+  .step-node.done .step-bubble .check { display: block; }
+  .step-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    opacity: 0.5;
+    white-space: nowrap;
+    transition: opacity 0.35s;
+  }
+  .step-node.active .step-label { opacity: 1; color: var(--green); }
+  .step-node.done .step-label { opacity: 0.7; }
+
+  .step-connector {
+    flex: 1;
+    height: 1px;
+    max-width: 80px;
+    background: var(--border);
+    margin-bottom: 26px;
+    transition: background 0.4s;
+    position: relative;
+    overflow: hidden;
+  }
+  .step-connector::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--green);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.5s ease;
+  }
+  .step-connector.filled::after { transform: scaleX(1); }
+
+  /* Card */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--green), transparent);
+    opacity: 0.4;
+  }
+
+  /* Step panels */
+  .step-panel {
+    display: none;
+    animation: slideIn 0.35s ease forwards;
+  }
+  .step-panel.active { display: block; }
+  .step-panel.exit { animation: slideOut 0.3s ease forwards; }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(24px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes slideOut {
+    from { opacity: 1; transform: translateX(0); }
+    to   { opacity: 0; transform: translateX(-24px); }
+  }
+
+  /* Typography within cards */
+  .step-eyebrow {
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--green);
+    margin-bottom: 12px;
+    opacity: 0.85;
+  }
+  .step-title {
+    font-family: 'Instrument Serif', serif;
+    font-size: 26px;
+    font-weight: 400;
+    line-height: 1.25;
+    color: #fff;
+    margin-bottom: 10px;
+  }
+  .step-title em {
+    font-style: italic;
+    color: var(--green);
+  }
+  .step-desc {
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 28px;
+    line-height: 1.7;
+  }
+
+  /* Meta console mockup */
+  .console-mockup {
+    background: #0f1b11;
+    border: 1px solid var(--border);
+    border-radius: var(--radius2);
+    overflow: hidden;
+    margin: 20px 0 24px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 12px;
+  }
+  .console-titlebar {
+    background: var(--bg3);
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .dot { width: 9px; height: 9px; border-radius: 50%; }
+  .dot.r { background: #ff5f57; }
+  .dot.y { background: #ffbd2e; }
+  .dot.g { background: #28c840; }
+  .console-url {
+    font-size: 11px;
+    color: var(--muted);
+    margin-left: 8px;
+  }
+  .console-body {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .console-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border-radius: 6px;
+    background: var(--bg2);
+    position: relative;
+  }
+  .console-row.highlight {
+    background: rgba(37,211,102,0.06);
+    border: 1px solid var(--border2);
+  }
+  .console-key { color: var(--muted); font-size: 11px; }
+  .console-val { color: #fff; font-size: 11px; }
+  .console-badge {
+    position: absolute;
+    right: -1px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--green);
+    color: var(--bg);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 4px 0 0 4px;
+  }
+  .arrow-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--green);
+    margin-top: -4px;
+    margin-left: 10px;
+    opacity: 0.85;
+  }
+  .arrow-label svg { flex-shrink: 0; }
+
+  /* Form fields */
+  .field {
+    margin-bottom: 18px;
+  }
+  .field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+  .field-inner {
+    position: relative;
+    display: flex;
+  }
+  .field input, .field textarea {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius2);
+    color: var(--text);
+    font-family: 'Geist Mono', monospace;
+    font-size: 13px;
+    padding: 11px 14px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    cursor: none;
+  }
+  .field input:focus, .field textarea:focus {
+    border-color: var(--border2);
+    box-shadow: 0 0 0 3px rgba(37,211,102,0.06);
+  }
+  .field input.valid { border-color: var(--green2); }
+  .field input.error { border-color: var(--err); }
+  .field-hint {
+    font-size: 11px;
+    color: var(--muted);
+    opacity: 0.65;
+    margin-top: 6px;
+  }
+  .field-hint code {
+    font-family: 'Geist Mono', monospace;
+    color: var(--text);
+    opacity: 0.8;
+    font-size: 11px;
+  }
+
+  /* Code block */
+  .code-block {
+    position: relative;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius2);
+    padding: 16px 50px 16px 16px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 12.5px;
+    line-height: 1.75;
+    color: var(--text);
+    overflow-x: auto;
+    white-space: pre;
+    margin: 16px 0;
+    cursor: none;
+  }
+  .code-block .kw { color: var(--green); }
+  .code-block .str { color: #a8d8b2; }
+  .code-block .val { color: #f4c430; }
+  .copy-btn {
+    position: absolute;
+    top: 10px; right: 10px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    cursor: none;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+  .copy-btn:hover { border-color: var(--border2); color: var(--green); }
+  .copy-btn.copied { border-color: var(--green); color: var(--green); }
+
+  /* Token path tabs */
+  .tabs {
+    display: flex;
+    gap: 2px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius2);
+    padding: 3px;
+    margin-bottom: 20px;
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 8px 16px;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    font-family: 'Geist', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    cursor: none;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .tab-btn.active {
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border2);
+    box-shadow: 0 1px 6px rgba(0,0,0,0.3);
+  }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* Step list (instructions) */
+  .step-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 12px 0;
+  }
+  .step-list li {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--text);
+    opacity: 0.9;
+  }
+  .step-list li .num-badge {
+    flex-shrink: 0;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: rgba(37,211,102,0.12);
+    border: 1px solid var(--border2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Geist Mono', monospace;
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--green);
+    margin-top: 2px;
+  }
+  .step-list path-label { color: var(--muted); font-size: 12px; }
+
+  /* Inline path breadcrumb */
+  .path {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 7px;
+    color: var(--muted);
+    vertical-align: middle;
+  }
+  .path span { color: var(--text); }
+  .path .sep { opacity: 0.4; }
+
+  /* Info box */
+  .info-box {
+    background: rgba(37,211,102,0.04);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius2);
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.65;
+    margin: 14px 0;
+  }
+  .info-box strong { color: var(--text); }
+
+  .warn-box {
+    background: rgba(244,196,48,0.05);
+    border: 1px solid rgba(244,196,48,0.25);
+    border-radius: var(--radius2);
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #c9a72c;
+    line-height: 1.65;
+    margin: 14px 0;
+  }
+
+  /* Choice buttons (step 1) */
+  .choice-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 28px;
+  }
+  .choice-btn {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    cursor: none;
+    text-align: left;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .choice-btn:hover {
+    border-color: var(--border2);
+    background: rgba(37,211,102,0.04);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+  .choice-btn .icon { font-size: 22px; }
+  .choice-btn .label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .choice-btn .sub {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.45;
+  }
+
+  /* Sub-panel for "No" path */
+  .no-account-panel {
+    display: none;
+    animation: fadeIn 0.3s ease;
+    border-top: 1px solid var(--border);
+    margin-top: 24px;
+    padding-top: 24px;
+  }
+  .no-account-panel.visible { display: block; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Validate button row */
+  .validate-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .validate-status {
+    font-size: 12px;
+    font-family: 'Geist Mono', monospace;
+  }
+  .validate-status.ok { color: var(--green); }
+  .validate-status.fail { color: var(--err); }
+  .validate-status.loading { color: var(--muted); }
+
+  /* Action buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border-radius: var(--radius2);
+    font-family: 'Geist', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: none;
+    border: none;
+    transition: all 0.2s;
+    letter-spacing: 0.01em;
+  }
+  .btn-primary {
+    background: var(--green);
+    color: var(--bg);
+    box-shadow: 0 0 20px rgba(37,211,102,0.2);
+  }
+  .btn-primary:hover {
+    background: #2de870;
+    box-shadow: 0 0 30px rgba(37,211,102,0.35);
+    transform: translateY(-1px);
+  }
+  .btn-primary:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover {
+    border-color: var(--border2);
+    color: var(--text);
+  }
+  .btn-sm {
+    padding: 8px 16px;
+    font-size: 12px;
+  }
+
+  /* Card footer */
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Divider */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 20px 0;
+    opacity: 0.5;
+  }
+  .divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* Success state */
+  .success-state {
+    text-align: center;
+    padding: 20px 0 8px;
+  }
+  .success-icon {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    background: rgba(37,211,102,0.1);
+    border: 1px solid var(--border2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    margin: 0 auto 20px;
+    animation: successPulse 2s ease infinite;
+    box-shadow: 0 0 30px rgba(37,211,102,0.15);
+  }
+  @keyframes successPulse {
+    0%, 100% { box-shadow: 0 0 20px rgba(37,211,102,0.15); }
+    50%       { box-shadow: 0 0 40px rgba(37,211,102,0.35); }
+  }
+  .success-title {
+    font-family: 'Instrument Serif', serif;
+    font-size: 28px;
+    color: #fff;
+    margin-bottom: 8px;
+  }
+  .success-sub {
+    font-size: 14px;
+    color: var(--muted);
+    max-width: 420px;
+    margin: 0 auto 24px;
+  }
+  .connected-number {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(37,211,102,0.08);
+    border: 1px solid var(--border2);
+    border-radius: 100px;
+    padding: 8px 20px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 14px;
+    color: var(--green);
+    margin-bottom: 28px;
+  }
+
+  /* Test message panel */
+  .test-panel {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius2);
+    padding: 20px;
+    text-align: left;
+    margin-top: 20px;
+  }
+  .test-panel h4 {
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 12px;
+    color: var(--text);
+  }
+
+  /* API key display */
+  .apikey-display {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--code-bg);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius2);
+    padding: 10px 14px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 13px;
+    color: var(--green);
+    margin: 12px 0;
+    letter-spacing: 0.03em;
+  }
+  .apikey-display .key-text {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Spinner */
+  .spinner {
+    width: 14px; height: 14px;
+    border: 2px solid rgba(37,211,102,0.2);
+    border-top-color: var(--green);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+  .spinner.visible { display: block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Progress indicator on connect btn */
+  .connect-progress {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 12px;
+    display: none;
+  }
+  .connect-progress.visible { display: block; }
+  .connect-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--green2), var(--green));
+    width: 0%;
+    transition: width 0.4s ease;
+  }
+
+  /* Scope list */
+  .scope-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .scope-pill {
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px;
+    padding: 3px 9px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    opacity: 0.9;
+  }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    .card { padding: 24px 20px; }
+    .step-connector { max-width: 40px; }
+    .choice-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<div class="page-wrap">
+
+  <header class="site-header">
+    <div class="logo-mark">💬</div>
+    <span class="logo-text">WHATAGENT / SETUP</span>
+  </header>
+
+  <div class="wizard">
+
+    <!-- Progress -->
+    <div class="progress-bar" id="progressBar">
+      <div class="step-node active" id="node-1">
+        <div class="step-bubble"><span class="num">1</span><span class="check">✓</span></div>
+        <span class="step-label">Account</span>
+      </div>
+      <div class="step-connector" id="conn-1"></div>
+      <div class="step-node" id="node-2">
+        <div class="step-bubble"><span class="num">2</span><span class="check">✓</span></div>
+        <span class="step-label">Phone ID</span>
+      </div>
+      <div class="step-connector" id="conn-2"></div>
+      <div class="step-node" id="node-3">
+        <div class="step-bubble"><span class="num">3</span><span class="check">✓</span></div>
+        <span class="step-label">Token</span>
+      </div>
+      <div class="step-connector" id="conn-3"></div>
+      <div class="step-node" id="node-4">
+        <div class="step-bubble"><span class="num">4</span><span class="check">✓</span></div>
+        <span class="step-label">Connect</span>
+      </div>
+    </div>
+
+    <!-- Card -->
+    <div class="card">
+
+      <!-- ─── STEP 1: Meta Business Account ─── -->
+      <div class="step-panel active" id="step-1">
+        <div class="step-eyebrow">Step 1 of 4 · Prerequisites</div>
+        <h1 class="step-title">Do you have a <em>Meta Business Account?</em></h1>
+        <p class="step-desc">WhatAgent connects to WhatsApp via the Meta Business platform. You'll need a verified Business Account to continue.</p>
+
+        <div class="choice-grid">
+          <button class="choice-btn" onclick="accountYes()">
+            <span class="icon">✅</span>
+            <span class="label">Yes, I have one</span>
+            <span class="sub">I have a Meta Business Account and a WhatsApp number.</span>
+          </button>
+          <button class="choice-btn" onclick="accountNo()">
+            <span class="icon">🆕</span>
+            <span class="label">No, I need to create one</span>
+            <span class="sub">I'll walk you through getting set up on Meta.</span>
+          </button>
+        </div>
+
+        <div class="no-account-panel" id="noAccountPanel">
+          <div class="step-eyebrow" style="margin-bottom:8px">Create a Meta Business Account</div>
+          <ul class="step-list">
+            <li>
+              <span class="num-badge">1</span>
+              <span>Go to <strong>business.facebook.com</strong> and click <strong>Create Account</strong>. Use a Facebook account you own.</span>
+            </li>
+            <li>
+              <span class="num-badge">2</span>
+              <span>Add a WhatsApp Business phone number — this can be a mobile number or a landline with SMS.</span>
+            </li>
+            <li>
+              <span class="num-badge">3</span>
+              <span>Go to <strong>developers.facebook.com</strong>, create a new app, choose <strong>Business</strong> type, and add <strong>WhatsApp</strong> as a product.</span>
+            </li>
+            <li>
+              <span class="num-badge">4</span>
+              <span>Complete Meta Business Verification (usually takes 1–2 days for a new account). Once verified, come back here.</span>
+            </li>
+          </ul>
+          <div class="warn-box">⏳ Business verification is typically required before sending to non-test numbers. Have your business document ready.</div>
+          <div class="card-footer" style="margin-top:16px; padding-top:16px;">
+            <span></span>
+            <button class="btn btn-primary" onclick="goStep(2)">I've created my account →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── STEP 2: Phone Number ID + WABA ID ─── -->
+      <div class="step-panel" id="step-2">
+        <div class="step-eyebrow">Step 2 of 4 · Meta Developer Console</div>
+        <h1 class="step-title">Find your <em>Phone Number ID</em></h1>
+        <p class="step-desc">Your Phone Number ID and WhatsApp Business Account (WABA) ID are in the Meta Developer Console — not in WhatsApp itself.</p>
+
+        <div class="console-mockup">
+          <div class="console-titlebar">
+            <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+            <span class="console-url">developers.facebook.com → Your App → WhatsApp → API Setup</span>
+          </div>
+          <div class="console-body">
+            <div class="console-row">
+              <span class="console-key">App Name</span>
+              <span class="console-val">My Business App</span>
+            </div>
+            <div class="console-row">
+              <span class="console-key">WhatsApp Business Account</span>
+              <span class="console-val" id="mockWabaId">2858436544498712</span>
+              <span class="console-badge">WABA ID ← copy this</span>
+            </div>
+            <div style="margin-left:10px;margin-top:-2px;">
+              <div class="arrow-label">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 2l8 8M10 4v6H4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                This is your WhatsApp Business Account ID — a long number
+              </div>
+            </div>
+            <div class="console-row">
+              <span class="console-key">Phone Number ID</span>
+              <span class="console-val" id="mockPhoneId">970776842795623</span>
+              <span class="console-badge">Phone ID ← copy this</span>
+            </div>
+            <div style="margin-left:10px;margin-top:-2px;">
+              <div class="arrow-label">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 2l8 8M10 4v6H4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                NOT the same as your phone number — it's a numeric ID
+              </div>
+            </div>
+            <div class="console-row">
+              <span class="console-key">Phone Number</span>
+              <span class="console-val">+44 20 7946 0123</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-box">
+          📍 <strong>Where to find it:</strong> Go to <strong>developers.facebook.com</strong> → select your app → <strong>WhatsApp</strong> in left sidebar → <strong>API Setup</strong>. Both IDs are shown at the top.
+        </div>
+
+        <div class="field">
+          <label>Phone Number ID</label>
+          <div class="field-inner">
+            <input type="text" id="phoneNumberId" placeholder="e.g. 970776842795623" oninput="updateMockup()">
+          </div>
+          <div class="field-hint">A long numeric ID — looks like <code>970776842795623</code>. Not your actual phone number.</div>
+        </div>
+
+        <div class="field">
+          <label>WhatsApp Business Account (WABA) ID</label>
+          <div class="field-inner">
+            <input type="text" id="wabaId" placeholder="e.g. 2858436544498712" oninput="updateMockup()">
+          </div>
+          <div class="field-hint">Also a long numeric ID, found just above Phone Number ID in the console.</div>
+        </div>
+
+        <div class="card-footer">
+          <button class="btn btn-ghost" onclick="goStep(1)">← Back</button>
+          <button class="btn btn-primary" id="step2Next" onclick="validateStep2()">Continue →</button>
+        </div>
+      </div>
+
+      <!-- ─── STEP 3: Access Token ─── -->
+      <div class="step-panel" id="step-3">
+        <div class="step-eyebrow">Step 3 of 4 · Access Token</div>
+        <h1 class="step-title">Generate your <em>access token</em></h1>
+        <p class="step-desc">Choose how you'll authenticate. If you're just testing, grab a quick 24-hour token. For production, create a permanent System User token.</p>
+
+        <div class="tabs">
+          <button class="tab-btn active" id="tab-temp" onclick="switchTab('temp')">⚡ Quick test (24h)</button>
+          <button class="tab-btn" id="tab-perm" onclick="switchTab('perm')">🔒 Production (permanent)</button>
+        </div>
+
+        <div class="tab-panel active" id="tabpanel-temp">
+          <ul class="step-list">
+            <li><span class="num-badge">1</span><span>In the Meta Developer Console, go to <span class="path"><span>WhatsApp</span><span class="sep">→</span><span>API Setup</span></span></span></li>
+            <li><span class="num-badge">2</span><span>Under <strong>Step 1: Add phone number</strong>, click <strong>Generate access token</strong></span></li>
+            <li><span class="num-badge">3</span><span>A temporary token appears — copy it and paste it below. <strong>It expires in 24 hours.</strong></span></li>
+          </ul>
+          <div class="warn-box">⏱ This token expires after 24 hours. Use it for testing, then upgrade to a permanent token when you're ready for production.</div>
+        </div>
+
+        <div class="tab-panel" id="tabpanel-perm">
+          <ul class="step-list">
+            <li><span class="num-badge">1</span><span>Go to <span class="path"><span>Meta Business Settings</span><span class="sep">→</span><span>Users</span><span class="sep">→</span><span>System Users</span></span></span></li>
+            <li><span class="num-badge">2</span><span>Click <strong>Add</strong>, give it a name (e.g. <em>WhatAgent Bot</em>), set role to <strong>Admin</strong></span></li>
+            <li><span class="num-badge">3</span><span>Click <strong>Generate new token</strong> on that system user</span></li>
+            <li><span class="num-badge">4</span><span>Select your WhatsApp app from the dropdown</span></li>
+            <li><span class="num-badge">5</span><span>Grant these scopes:
+              <div class="scope-list">
+                <span class="scope-pill">whatsapp_business_messaging</span>
+                <span class="scope-pill">whatsapp_business_management</span>
+              </div>
+            </span></li>
+            <li><span class="num-badge">6</span><span>Copy the generated token — <strong>this one never expires.</strong></span></li>
+          </ul>
+          <div class="info-box">✅ <strong>Recommended for production.</strong> System user tokens don't expire and aren't tied to a personal Facebook account.</div>
+        </div>
+
+        <div class="field" style="margin-top:20px;">
+          <label>Access Token</label>
+          <div class="field-inner">
+            <input type="text" id="accessToken" placeholder="EAAxxxxxxxxxxxxx..." oninput="clearTokenValidation()">
+          </div>
+          <div class="field-hint">Starts with <code>EAA</code>. Paste the full token, including the prefix.</div>
+        </div>
+
+        <div class="validate-row">
+          <button class="btn btn-ghost btn-sm" onclick="validateToken()">
+            <span class="spinner" id="tokenSpinner"></span>
+            Validate token
+          </button>
+          <span class="validate-status" id="tokenStatus"></span>
+        </div>
+
+        <div class="card-footer">
+          <button class="btn btn-ghost" onclick="goStep(2)">← Back</button>
+          <button class="btn btn-primary" id="step3Next" onclick="validateStep3()">Continue →</button>
+        </div>
+      </div>
+
+      <!-- ─── STEP 4: Connect ─── -->
+      <div class="step-panel" id="step-4">
+        <div class="step-eyebrow">Step 4 of 4 · Connect to WhatAgent</div>
+        <h1 class="step-title">Connect your <em>number</em></h1>
+        <p class="step-desc">First, get a WhatAgent API key — then we'll wire everything together in one click.</p>
+
+        <div id="connectSetup">
+          <div class="field">
+            <label>Your email</label>
+            <div class="field-inner" style="gap:8px">
+              <input type="email" id="userEmail" placeholder="you@example.com" style="flex:1">
+              <button class="btn btn-ghost btn-sm" onclick="registerAccount()" style="white-space:nowrap;flex-shrink:0">
+                <span class="spinner" id="regSpinner"></span>
+                Get API Key
+              </button>
+            </div>
+          </div>
+
+          <div id="apiKeyResult" style="display:none">
+            <div class="info-box" style="margin-bottom:0">
+              <strong>🔑 Your WhatAgent API Key</strong>
+              <div class="apikey-display">
+                <span class="key-text" id="apiKeyText">wha_...</span>
+                <button class="copy-btn" onclick="copyApiKey(this)">copy</button>
+              </div>
+              <div style="font-size:11px;opacity:0.7;margin-top:4px;">Store this key somewhere safe — it won't be shown again.</div>
+            </div>
+          </div>
+
+          <div class="divider">or paste an existing key</div>
+
+          <div class="field">
+            <label>WhatAgent API Key</label>
+            <input type="text" id="apiKeyInput" placeholder="wha_..." oninput="updateConnectCmd()">
+            <div class="field-hint">Already have a key? Paste it here and skip registration.</div>
+          </div>
+        </div>
+
+        <div style="margin:20px 0 8px">
+          <div style="font-size:11px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Connect command — auto-filled with your values</div>
+          <div class="code-block" id="connectCmd">
+<span class="kw">curl</span> -X POST https://whatagent-production.up.railway.app/v1/accounts \
+  -H <span class="str">'Authorization: Bearer <span class="val" id="cmdApiKey">wha_your_api_key</span>'</span> \
+  -H <span class="str">'Content-Type: application/json'</span> \
+  -d <span class="str">'{
+    "phone_number_id": "<span class="val" id="cmdPhoneId">YOUR_PHONE_NUMBER_ID</span>",
+    "waba_id": "<span class="val" id="cmdWabaId">YOUR_WABA_ID</span>",
+    "access_token": "<span class="val" id="cmdToken">YOUR_ACCESS_TOKEN</span>"
+  }'</span><button class="copy-btn" onclick="copyConnectCmd(this)">copy</button>
+          </div>
+        </div>
+
+        <div id="connectStatus" style="display:none"></div>
+
+        <div class="connect-progress" id="connectProgress">
+          <div class="connect-progress-bar" id="connectProgressBar"></div>
+        </div>
+
+        <div class="card-footer">
+          <button class="btn btn-ghost" onclick="goStep(3)">← Back</button>
+          <button class="btn btn-primary" id="connectBtn" onclick="connectNumber()">
+            <span class="spinner" id="connectSpinner"></span>
+            Connect my number
+          </button>
+        </div>
+      </div>
+
+      <!-- ─── SUCCESS ─── -->
+      <div class="step-panel" id="step-success">
+        <div class="success-state">
+          <div class="success-icon">🎉</div>
+          <h2 class="success-title">You're live.</h2>
+          <p class="success-sub">Your WhatsApp number is connected to WhatAgent and ready to send messages.</p>
+          <div class="connected-number">
+            <span>✅</span>
+            <span id="successNumber">+44 20 7946 0123</span>
+            <span style="opacity:0.5;font-size:11px">connected</span>
+          </div>
+
+          <div class="test-panel">
+            <h4>Send your first message</h4>
+            <div class="code-block" style="margin:0">
+<span class="kw">curl</span> -X POST https://whatagent-production.up.railway.app/v1/messages \
+  -H <span class="str">'Authorization: Bearer <span class="val" id="successApiKey">wha_...</span>'</span> \
+  -H <span class="str">'Content-Type: application/json'</span> \
+  -d <span class="str">'{
+    "to": "<span class="val">+14155552671</span>",
+    "text": <span class="val">"Hello from WhatAgent! 🚀"</span>
+  }'</span><button class="copy-btn" onclick="copySuccessCmd(this)">copy</button>
+            </div>
+
+            <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;">
+              <a href="https://github.com/rushdmowjee/whatagent" target="_blank" style="text-decoration:none">
+                <button class="btn btn-ghost btn-sm">📦 View SDK on GitHub</button>
+              </a>
+              <button class="btn btn-ghost btn-sm" onclick="restartWizard()">↺ Connect another number</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end .card -->
+  </div><!-- end .wizard -->
+</div><!-- end .page-wrap -->
+
+<script>
+  // ── State ──────────────────────────────────────────────
+  const state = {
+    currentStep: 1,
+    phoneNumberId: '',
+    wabaId: '',
+    accessToken: '',
+    apiKey: '',
+    tokenValidated: false,
+    connectedNumber: '',
+  };
+
+  const API_BASE = 'https://whatagent-production.up.railway.app';
+
+  // ── Custom cursor ──────────────────────────────────────
+  const cursor = document.getElementById('cursor');
+  const ring   = document.getElementById('cursorRing');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX + 'px';
+    cursor.style.top  = e.clientY + 'px';
+    ring.style.left   = e.clientX + 'px';
+    ring.style.top    = e.clientY + 'px';
+  });
+  document.addEventListener('mouseover', e => {
+    if (e.target.closest('button, a, input, textarea, [onclick]')) {
+      ring.classList.add('hover');
+    } else {
+      ring.classList.remove('hover');
+    }
+  });
+
+  // ── Step navigation ───────────────────────────────────
+  function goStep(n) {
+    const prev = state.currentStep;
+    const panelPrev = document.getElementById('step-' + prev);
+    if (panelPrev) { panelPrev.classList.remove('active'); }
+
+    state.currentStep = n;
+
+    const panelNext = document.getElementById('step-' + n) || document.getElementById('step-success');
+    if (panelNext) {
+      panelNext.classList.add('active');
+    }
+
+    updateProgress(n);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function updateProgress(step) {
+    for (let i = 1; i <= 4; i++) {
+      const node = document.getElementById('node-' + i);
+      const conn = document.getElementById('conn-' + i);
+      node.classList.remove('active', 'done');
+      if (conn) conn.classList.remove('filled');
+
+      if (i < step)       { node.classList.add('done'); }
+      else if (i === step) { node.classList.add('active'); }
+
+      if (conn && i < step) { conn.classList.add('filled'); }
+    }
+    if (step > 4) {
+      // success: all done
+      for (let i = 1; i <= 4; i++) {
+        document.getElementById('node-' + i).classList.remove('active');
+        document.getElementById('node-' + i).classList.add('done');
+        const c = document.getElementById('conn-' + i);
+        if (c) c.classList.add('filled');
+      }
+    }
+  }
+
+  // ── Step 1 ─────────────────────────────────────────────
+  function accountYes() { goStep(2); }
+  function accountNo()  {
+    const panel = document.getElementById('noAccountPanel');
+    panel.classList.toggle('visible');
+  }
+
+  // ── Step 2 ─────────────────────────────────────────────
+  function updateMockup() {
+    const pid = document.getElementById('phoneNumberId').value;
+    const wid = document.getElementById('wabaId').value;
+    if (pid) document.getElementById('mockPhoneId').textContent = pid;
+    else     document.getElementById('mockPhoneId').textContent = '970776842795623';
+    if (wid) document.getElementById('mockWabaId').textContent  = wid;
+    else     document.getElementById('mockWabaId').textContent  = '2858436544498712';
+    updateConnectCmd();
+  }
+
+  function validateStep2() {
+    const pid = document.getElementById('phoneNumberId').value.trim();
+    const wid = document.getElementById('wabaId').value.trim();
+    if (!pid || !/^\d{10,}$/.test(pid)) {
+      flashError('phoneNumberId', 'Enter a valid numeric Phone Number ID (10+ digits)');
+      return;
+    }
+    if (!wid || !/^\d{10,}$/.test(wid)) {
+      flashError('wabaId', 'Enter a valid numeric WABA ID (10+ digits)');
+      return;
+    }
+    state.phoneNumberId = pid;
+    state.wabaId        = wid;
+    goStep(3);
+  }
+
+  function flashError(fieldId, msg) {
+    const el = document.getElementById(fieldId);
+    el.classList.add('error');
+    el.focus();
+    setTimeout(() => el.classList.remove('error'), 2000);
+  }
+
+  // ── Step 3 ─────────────────────────────────────────────
+  function switchTab(which) {
+    ['temp', 'perm'].forEach(t => {
+      document.getElementById('tab-' + t).classList.toggle('active', t === which);
+      document.getElementById('tabpanel-' + t).classList.toggle('active', t === which);
+    });
+  }
+
+  function clearTokenValidation() {
+    state.tokenValidated = false;
+    document.getElementById('tokenStatus').textContent = '';
+    document.getElementById('tokenStatus').className = 'validate-status';
+    document.getElementById('accessToken').classList.remove('valid', 'error');
+    updateConnectCmd();
+  }
+
+  async function validateToken() {
+    const token = document.getElementById('accessToken').value.trim();
+    if (!token) { return; }
+    const spinner  = document.getElementById('tokenSpinner');
+    const statusEl = document.getElementById('tokenStatus');
+    spinner.classList.add('visible');
+    statusEl.className = 'validate-status loading';
+    statusEl.textContent = 'Checking...';
+
+    try {
+      const res = await fetch(
+        `https://graph.facebook.com/v19.0/${state.phoneNumberId || document.getElementById('phoneNumberId').value.trim()}`,
+        { headers: { Authorization: 'Bearer ' + token } }
+      );
+      const data = await res.json();
+      spinner.classList.remove('visible');
+      if (data.id) {
+        state.tokenValidated = true;
+        statusEl.className  = 'validate-status ok';
+        statusEl.textContent = '✓ Token is valid';
+        document.getElementById('accessToken').classList.add('valid');
+      } else {
+        statusEl.className  = 'validate-status fail';
+        statusEl.textContent = '✗ ' + (data.error?.message || 'Invalid token');
+        document.getElementById('accessToken').classList.add('error');
+      }
+    } catch {
+      spinner.classList.remove('visible');
+      statusEl.className  = 'validate-status fail';
+      statusEl.textContent = '✗ Could not reach Meta API';
+    }
+  }
+
+  function validateStep3() {
+    const token = document.getElementById('accessToken').value.trim();
+    if (!token || !token.startsWith('EAA')) {
+      flashError('accessToken', 'Paste a valid Meta access token (starts with EAA)');
+      return;
+    }
+    state.accessToken = token;
+    updateConnectCmd();
+    goStep(4);
+  }
+
+  // ── Step 4 ─────────────────────────────────────────────
+  function updateConnectCmd() {
+    const key   = document.getElementById('apiKeyInput')?.value?.trim() || state.apiKey || 'wha_your_api_key';
+    const pid   = document.getElementById('phoneNumberId')?.value?.trim() || state.phoneNumberId || 'YOUR_PHONE_NUMBER_ID';
+    const wid   = document.getElementById('wabaId')?.value?.trim() || state.wabaId || 'YOUR_WABA_ID';
+    const token = document.getElementById('accessToken')?.value?.trim() || state.accessToken || 'YOUR_ACCESS_TOKEN';
+
+    const k = document.getElementById('cmdApiKey');
+    const p = document.getElementById('cmdPhoneId');
+    const w = document.getElementById('cmdWabaId');
+    const t = document.getElementById('cmdToken');
+    if (k) k.textContent = key;
+    if (p) p.textContent = pid;
+    if (w) w.textContent = wid;
+    if (t) t.textContent = token;
+  }
+
+  async function registerAccount() {
+    const email = document.getElementById('userEmail').value.trim();
+    if (!email || !email.includes('@')) {
+      flashError('userEmail', 'Enter a valid email address');
+      return;
+    }
+    const spinner = document.getElementById('regSpinner');
+    spinner.classList.add('visible');
+
+    try {
+      const res = await fetch(API_BASE + '/v1/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, appName: 'WhatAgent Wizard' }),
+      });
+      const data = await res.json();
+      spinner.classList.remove('visible');
+
+      if (res.ok && data.apiKey) {
+        state.apiKey = data.apiKey;
+        document.getElementById('apiKeyText').textContent = data.apiKey;
+        document.getElementById('apiKeyInput').value = data.apiKey;
+        document.getElementById('apiKeyResult').style.display = 'block';
+        document.getElementById('successApiKey').textContent = data.apiKey;
+        updateConnectCmd();
+      } else {
+        showConnectStatus('error', '✗ ' + (data.error || 'Registration failed. Check the API is reachable.'));
+      }
+    } catch {
+      spinner.classList.remove('visible');
+      showConnectStatus('error', '✗ Could not reach WhatAgent API. Make sure the service is running.');
+    }
+  }
+
+  async function connectNumber() {
+    const apiKey = document.getElementById('apiKeyInput').value.trim() || state.apiKey;
+    const pid    = document.getElementById('phoneNumberId').value.trim() || state.phoneNumberId;
+    const wid    = document.getElementById('wabaId').value.trim() || state.wabaId;
+    const token  = document.getElementById('accessToken').value.trim() || state.accessToken;
+
+    if (!apiKey || !apiKey.startsWith('wha_')) {
+      showConnectStatus('error', '✗ Enter a valid WhatAgent API key (starts with wha_)');
+      return;
+    }
+    if (!pid || !wid || !token) {
+      showConnectStatus('error', '✗ Make sure Phone Number ID, WABA ID, and access token are all filled in.');
+      return;
+    }
+
+    const btn = document.getElementById('connectBtn');
+    const spinner = document.getElementById('connectSpinner');
+    const progress = document.getElementById('connectProgress');
+    const bar      = document.getElementById('connectProgressBar');
+
+    btn.disabled = true;
+    spinner.classList.add('visible');
+    progress.classList.add('visible');
+    bar.style.width = '30%';
+    showConnectStatus('loading', '⏳ Connecting...');
+
+    setTimeout(() => { bar.style.width = '65%'; }, 400);
+
+    try {
+      const res = await fetch(API_BASE + '/v1/accounts', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + apiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phone_number_id: pid,
+          waba_id: wid,
+          access_token: token,
+        }),
+      });
+      const data = await res.json();
+      bar.style.width = '100%';
+      spinner.classList.remove('visible');
+
+      setTimeout(() => {
+        progress.classList.remove('visible');
+        if (res.ok) {
+          state.connectedNumber = data.display_phone_number || '+' + pid;
+          state.apiKey          = apiKey;
+          document.getElementById('successNumber').textContent   = state.connectedNumber;
+          document.getElementById('successApiKey').textContent   = apiKey;
+          showSuccess();
+        } else {
+          btn.disabled = false;
+          showConnectStatus('error', '✗ ' + (data.error || 'Connection failed. Check your credentials.'));
+        }
+      }, 400);
+    } catch {
+      spinner.classList.remove('visible');
+      bar.style.width = '0%';
+      progress.classList.remove('visible');
+      btn.disabled = false;
+      showConnectStatus('error', '✗ Could not reach WhatAgent API. Make sure the service is running.');
+    }
+  }
+
+  function showConnectStatus(type, msg) {
+    const el = document.getElementById('connectStatus');
+    el.style.display = 'block';
+    el.className = '';
+    if (type === 'error') {
+      el.innerHTML = `<div class="warn-box" style="border-color:rgba(255,91,91,0.3);background:rgba(255,91,91,0.05);color:#ff5b5b;">${msg}</div>`;
+    } else if (type === 'loading') {
+      el.innerHTML = `<div class="info-box">${msg}</div>`;
+    } else {
+      el.innerHTML = `<div class="info-box">${msg}</div>`;
+    }
+  }
+
+  function showSuccess() {
+    // Hide step 4, show success panel
+    document.getElementById('step-4').classList.remove('active');
+    document.getElementById('step-success').classList.add('active');
+    updateProgress(5);
+  }
+
+  // ── Copy helpers ────────────────────────────────────────
+  function copyText(text, btn) {
+    navigator.clipboard.writeText(text).then(() => {
+      const orig = btn.textContent;
+      btn.textContent = 'copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1800);
+    });
+  }
+
+  function copyConnectCmd(btn) {
+    const key   = document.getElementById('cmdApiKey').textContent;
+    const pid   = document.getElementById('cmdPhoneId').textContent;
+    const wid   = document.getElementById('cmdWabaId').textContent;
+    const token = document.getElementById('cmdToken').textContent;
+    const txt = `curl -X POST ${API_BASE}/v1/accounts \\
+  -H 'Authorization: Bearer ${key}' \\
+  -H 'Content-Type: application/json' \\
+  -d '{"phone_number_id":"${pid}","waba_id":"${wid}","access_token":"${token}"}'`;
+    copyText(txt, btn);
+  }
+
+  function copyApiKey(btn) {
+    copyText(document.getElementById('apiKeyText').textContent, btn);
+  }
+
+  function copySuccessCmd(btn) {
+    const key = document.getElementById('successApiKey').textContent;
+    const txt = `curl -X POST ${API_BASE}/v1/messages \\
+  -H 'Authorization: Bearer ${key}' \\
+  -H 'Content-Type: application/json' \\
+  -d '{"to":"+14155552671","text":"Hello from WhatAgent! 🚀"}'`;
+    copyText(txt, btn);
+  }
+
+  function restartWizard() {
+    // Reset state
+    Object.assign(state, {
+      currentStep: 1, phoneNumberId: '', wabaId: '',
+      accessToken: '', apiKey: '', tokenValidated: false, connectedNumber: '',
+    });
+    document.getElementById('step-success').classList.remove('active');
+    document.getElementById('step-1').classList.add('active');
+    updateProgress(1);
+  }
+
+  // ── Sync input fields to state on step 4 load ──────────
+  document.getElementById('apiKeyInput').addEventListener('input', updateConnectCmd);
+
+  // Init
+  updateProgress(1);
+</script>
+</body>
+</html>
