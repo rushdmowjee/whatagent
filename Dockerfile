@@ -24,6 +24,10 @@ RUN npm install --omit=dev
 
 COPY --from=builder /app/packages/api/dist ./dist
 
+# AI-friendly docs served at /llms.txt and /openapi.yaml
+COPY llms.txt ./
+COPY openapi.yaml ./
+
 EXPOSE 3000
 
 CMD ["node", "dist/index.js"]

@@ -95,6 +95,69 @@ In Meta App Dashboard → WhatsApp → Configuration → Webhooks:
 - Verify Token: `whatagent_verify_2024`
 - Subscribe to: `messages`, `message_status_updates`
 
+## AI Integration — Zero Guessing Required
+
+If you are an AI model integrating WhatAgent, read [`llms.txt`](./llms.txt) or fetch it from the running API:
+
+```
+GET https://whatagent-production.up.railway.app/llms.txt
+```
+
+### Critical: Authentication
+
+```
+Authorization: Bearer wha_<your-api-key>
+```
+
+> **Do not** use `X-API-Key`. WhatAgent uses standard HTTP Bearer auth. Keys always start with `wha_`.
+
+### Copy-paste curl commands
+
+**Send a message:**
+```bash
+curl -X POST https://whatagent-production.up.railway.app/v1/messages \
+  -H "Authorization: Bearer wha_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{"to": "+14155552671", "text": "Hello from WhatAgent!"}'
+```
+
+**Bootstrap (first-time setup — uses BOOTSTRAP_SECRET, not a wha_ key):**
+```bash
+curl -X POST https://whatagent-production.up.railway.app/v1/bootstrap \
+  -H "Authorization: Bearer YOUR_BOOTSTRAP_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phone_number_id": "1036854129509651",
+    "waba_id": "2858436544498712",
+    "access_token": "EAAxxxxxxxxxx"
+  }'
+```
+
+**Connect Meta credentials:**
+```bash
+curl -X POST https://whatagent-production.up.railway.app/v1/accounts \
+  -H "Authorization: Bearer wha_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{"phone_number_id": "...", "waba_id": "...", "access_token": "EAA..."}'
+```
+
+### OpenAPI Spec
+
+```
+GET https://whatagent-production.up.railway.app/openapi.yaml
+```
+
+Also available as [`openapi.yaml`](./openapi.yaml) in this repo. Use it to auto-generate client code.
+
+### Common Mistakes (avoid these)
+
+| Wrong | Correct |
+|-------|---------|
+| `X-API-Key: wha_xxx` | `Authorization: Bearer wha_xxx` |
+| `Authorization: wha_xxx` | `Authorization: Bearer wha_xxx` |
+| Sending bootstrap secret to `/v1/messages` | Use a `wha_` key from bootstrap response |
+| Omitting `Bearer ` prefix | Always include `Bearer ` (with space) |
+
 ## API Reference
 
 ### Send a message

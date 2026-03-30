@@ -1,4 +1,6 @@
 import 'dotenv/config';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -12,6 +14,9 @@ import { statusRouter } from './routes/status';
 import { authMiddleware } from './middleware/auth';
 import { errorHandler } from './middleware/errorHandler';
 import { initDb } from './db/client';
+
+// Resolve app root: at runtime __dirname = /app/dist, so /app is one level up
+const REPO_ROOT = join(__dirname, '..');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -32,6 +37,25 @@ const limiter = rateLimit({
   legacyHeaders: false,
 });
 app.use('/v1', limiter);
+
+// AI-friendly integration context — served at root for easy discovery
+app.get('/llms.txt', (_req, res) => {
+  try {
+    const content = readFileSync(join(REPO_ROOT, 'llms.txt'), 'utf-8');
+    res.type('text/plain').send(content);
+  } catch {
+    res.status(404).type('text/plain').send('Not found');
+  }
+});
+
+app.get('/openapi.yaml', (_req, res) => {
+  try {
+    const content = readFileSync(join(REPO_ROOT, 'openapi.yaml'), 'utf-8');
+    res.type('application/yaml').send(content);
+  } catch {
+    res.status(404).type('text/plain').send('Not found');
+  }
+});
 
 // Public routes
 app.use('/v1/status', statusRouter);
