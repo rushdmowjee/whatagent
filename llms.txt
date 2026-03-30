@@ -186,6 +186,27 @@ Use E.164 format: `+<country-code><number>` e.g. `+14155552671`, `+971501234567`
 { "error": "Account not found. Complete onboarding first." } // 404 — no account configured
 ```
 
+## Register a Webhook (receive inbound messages)
+
+```bash
+curl -X POST https://whatagent-production.up.railway.app/v1/accounts \
+  -H "Authorization: Bearer wha_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{"webhook_url": "https://your-app.com/whatsapp"}'
+```
+
+WhatAgent will POST to this URL when:
+- A user sends you an inbound WhatsApp message
+- A delivery status changes (sent/delivered/read/failed)
+
+Webhook payload:
+```json
+{
+  "event": "message.received",
+  "message": { "id": "msg_xxx", "from": "+14155552671", "type": "text", "text": "Hello!" }
+}
+```
+
 ## SDK (JavaScript/TypeScript)
 
 ```bash
@@ -199,9 +220,24 @@ const wa = new WhatAgent({ apiKey: process.env.WHATAGENT_API_KEY });
 await wa.messages.send({ to: '+14155552671', text: 'Hello!' });
 ```
 
-## MCP Server (Claude Code / Cursor / Windsurf)
+## SDK (Python)
 
-Add to `.mcp.json`:
+```bash
+pip install whatagent
+```
+
+```python
+from whatagent import WhatAgent
+
+wa = WhatAgent()  # reads WHATAGENT_API_KEY from env
+wa.messages.send(to="+14155552671", text="Hello from Python!")
+```
+
+## MCP Server (Claude Code / Cursor / Windsurf / Cline / Devin)
+
+No API key yet? The server runs a guided setup wizard automatically.
+
+**Claude Code** — add to `.claude/settings.json`:
 ```json
 {
   "mcpServers": {
@@ -213,6 +249,28 @@ Add to `.mcp.json`:
   }
 }
 ```
+
+**Cursor** — add to `.cursor/mcp.json`:
+```json
+{
+  "mcpServers": {
+    "whatagent": {
+      "command": "npx",
+      "args": ["-y", "@whatagent/mcp"],
+      "env": { "WHATAGENT_API_KEY": "wha_..." }
+    }
+  }
+}
+```
+
+**Available MCP tools:**
+- `setup_whatagent` — first-time setup wizard (shown when no API key configured)
+- `send_whatsapp_message` — send a text message
+- `send_whatsapp_template` — send an approved template
+- `get_message_status` — check delivery status
+- `list_recent_messages` — view sent/received messages
+- `configure_webhook` — set a URL to receive inbound messages
+- `get_account` — view account details
 
 ## OpenAPI Spec
 

@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "whatagent"
+version = "1.0.0"
+description = "The easiest way to send WhatsApp messages from code."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "WhatAgent", email = "hello@whatagent.dev" }]
+keywords = ["whatsapp", "messaging", "api", "sdk", "mcp"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Communications :: Chat",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+requires-python = ">=3.8"
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/rushdmowjee/whatagent"
+Documentation = "https://github.com/rushdmowjee/whatagent"
+Repository = "https://github.com/rushdmowjee/whatagent"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["whatagent*"]
