@@ -870,7 +870,7 @@
     <div class="progress-bar" id="progressBar">
       <div class="step-node active" id="node-1">
         <div class="step-bubble"><span class="num">1</span><span class="check">✓</span></div>
-        <span class="step-label">Account</span>
+        <span class="step-label">Connect</span>
       </div>
       <div class="step-connector" id="conn-1"></div>
       <div class="step-node" id="node-2">
@@ -885,57 +885,41 @@
       <div class="step-connector" id="conn-3"></div>
       <div class="step-node" id="node-4">
         <div class="step-bubble"><span class="num">4</span><span class="check">✓</span></div>
-        <span class="step-label">Connect</span>
+        <span class="step-label">API Key</span>
       </div>
     </div>
 
     <!-- Card -->
     <div class="card">
 
-      <!-- ─── STEP 1: Meta Business Account ─── -->
+      <!-- ─── STEP 1: Connect WhatsApp (Embedded Signup) ─── -->
       <div class="step-panel active" id="step-1">
-        <div class="step-eyebrow">Step 1 of 4 · Prerequisites</div>
-        <h1 class="step-title">Do you have a <em>Meta Business Account?</em></h1>
-        <p class="step-desc">WhatAgent connects to WhatsApp via the Meta Business platform. You'll need a verified Business Account to continue.</p>
+        <div class="step-eyebrow">Step 1 of 2 · Connect</div>
+        <h1 class="step-title">Connect <em>WhatsApp</em> in one click</h1>
+        <p class="step-desc">No developer console required. Just log in with Meta and your number is configured automatically — like magic.</p>
 
-        <div class="choice-grid">
-          <button class="choice-btn" onclick="accountYes()">
-            <span class="icon">✅</span>
-            <span class="label">Yes, I have one</span>
-            <span class="sub">I have a Meta Business Account and a WhatsApp number.</span>
-          </button>
-          <button class="choice-btn" onclick="accountNo()">
-            <span class="icon">🆕</span>
-            <span class="label">No, I need to create one</span>
-            <span class="sub">I'll walk you through getting set up on Meta.</span>
+        <div class="field">
+          <label>Your email</label>
+          <div class="field-inner">
+            <input type="email" id="metaEmail" placeholder="you@example.com">
+          </div>
+          <div class="field-hint">Used as your account identifier. Your API key will be tied to this email.</div>
+        </div>
+
+        <div style="margin-top:16px">
+          <button class="btn btn-primary" id="metaConnectBtn" style="width:100%;justify-content:center;gap:10px;font-size:15px;padding:14px 24px;" onclick="startEmbeddedSignup()">
+            <span class="spinner" id="metaSpinner"></span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="opacity:0.9"><path d="M12 2.04c-5.5 0-10 4.49-10 10.02 0 5 3.66 9.15 8.44 9.9v-7H7.9v-2.9h2.54V9.85c0-2.51 1.49-3.89 3.78-3.89 1.09 0 2.23.19 2.23.19v2.47h-1.26c-1.24 0-1.63.77-1.63 1.56v1.88h2.78l-.45 2.9h-2.33v7a10 10 0 008.44-9.9c0-5.53-4.5-10.02-10-10.02z"/></svg>
+            Connect WhatsApp with Meta
           </button>
         </div>
 
-        <div class="no-account-panel" id="noAccountPanel">
-          <div class="step-eyebrow" style="margin-bottom:8px">Create a Meta Business Account</div>
-          <ul class="step-list">
-            <li>
-              <span class="num-badge">1</span>
-              <span>Go to <strong>business.facebook.com</strong> and click <strong>Create Account</strong>. Use a Facebook account you own.</span>
-            </li>
-            <li>
-              <span class="num-badge">2</span>
-              <span>Add a WhatsApp Business phone number — this can be a mobile number or a landline with SMS.</span>
-            </li>
-            <li>
-              <span class="num-badge">3</span>
-              <span>Go to <strong>developers.facebook.com</strong>, create a new app, choose <strong>Business</strong> type, and add <strong>WhatsApp</strong> as a product.</span>
-            </li>
-            <li>
-              <span class="num-badge">4</span>
-              <span>Complete Meta Business Verification (usually takes 1–2 days for a new account). Once verified, come back here.</span>
-            </li>
-          </ul>
-          <div class="warn-box">⏳ Business verification is typically required before sending to non-test numbers. Have your business document ready.</div>
-          <div class="card-footer" style="margin-top:16px; padding-top:16px;">
-            <span></span>
-            <button class="btn btn-primary" onclick="goStep(2)">I've created my account →</button>
-          </div>
+        <div id="embeddedStatus" style="display:none;margin-top:12px"></div>
+
+        <div style="margin-top:20px;text-align:center">
+          <button class="btn btn-ghost btn-sm" onclick="goManual()" style="opacity:0.55;font-size:12px;">
+            Developer? Set up manually with credentials →
+          </button>
         </div>
       </div>
 
@@ -1246,11 +1230,120 @@
     }
   }
 
-  // ── Step 1 ─────────────────────────────────────────────
-  function accountYes() { goStep(2); }
-  function accountNo()  {
-    const panel = document.getElementById('noAccountPanel');
-    panel.classList.toggle('visible');
+  // ── Step 1: Embedded signup ───────────────────────────
+  function goManual() {
+    const email = document.getElementById('metaEmail').value.trim();
+    if (email) {
+      const f = document.getElementById('userEmail');
+      if (f) f.value = email;
+    }
+    goStep(2);
+  }
+
+  function showEmbeddedStatus(type, msg) {
+    const el = document.getElementById('embeddedStatus');
+    el.style.display = 'block';
+    if (type === 'error') {
+      el.innerHTML = `<div class="warn-box" style="border-color:rgba(255,91,91,0.3);background:rgba(255,91,91,0.05);color:#ff5b5b;">${msg}</div>`;
+    } else {
+      el.innerHTML = `<div class="info-box">${msg}</div>`;
+    }
+  }
+
+  function loadFbSdk(appId) {
+    return new Promise((resolve) => {
+      if (window.FB) {
+        FB.init({ appId, cookie: true, xfbml: false, version: 'v19.0' });
+        resolve();
+        return;
+      }
+      window.fbAsyncInit = function () {
+        FB.init({ appId, cookie: true, xfbml: false, version: 'v19.0' });
+        resolve();
+      };
+      const s = document.createElement('script');
+      s.src = 'https://connect.facebook.net/en_US/sdk.js';
+      document.head.appendChild(s);
+    });
+  }
+
+  async function startEmbeddedSignup() {
+    const email = document.getElementById('metaEmail').value.trim();
+    if (!email || !email.includes('@')) {
+      document.getElementById('metaEmail').classList.add('error');
+      setTimeout(() => document.getElementById('metaEmail').classList.remove('error'), 2000);
+      return;
+    }
+
+    const btn = document.getElementById('metaConnectBtn');
+    const spinner = document.getElementById('metaSpinner');
+    btn.disabled = true;
+    spinner.classList.add('visible');
+    document.getElementById('embeddedStatus').style.display = 'none';
+
+    let config;
+    try {
+      const r = await fetch(API_BASE + '/v1/auth/meta/start');
+      if (!r.ok) throw new Error('not configured');
+      config = await r.json();
+    } catch {
+      // Embedded signup not configured — fall back to manual flow silently
+      btn.disabled = false;
+      spinner.classList.remove('visible');
+      goManual();
+      return;
+    }
+
+    try {
+      await loadFbSdk(config.app_id);
+    } catch {
+      btn.disabled = false;
+      spinner.classList.remove('visible');
+      showEmbeddedStatus('error', '✗ Could not load Meta SDK. Check your connection and try again.');
+      return;
+    }
+
+    spinner.classList.remove('visible');
+
+    FB.login(async (response) => {
+      if (!response.authResponse?.code) {
+        btn.disabled = false;
+        showEmbeddedStatus('error', '✗ Meta login was cancelled. Try again or use manual setup.');
+        return;
+      }
+
+      spinner.classList.add('visible');
+      showEmbeddedStatus('loading', '⏳ Connecting your WhatsApp account...');
+
+      try {
+        const res = await fetch(API_BASE + '/v1/auth/meta/callback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, app_name: 'My App', code: response.authResponse.code }),
+        });
+        const data = await res.json();
+        spinner.classList.remove('visible');
+        btn.disabled = false;
+
+        if (res.ok && data.api_key) {
+          state.apiKey = data.api_key;
+          state.connectedNumber = data.display_phone_number || '';
+          document.getElementById('successNumber').textContent = data.display_phone_number || '';
+          document.getElementById('successApiKey').textContent = data.api_key;
+          showSuccess();
+        } else {
+          showEmbeddedStatus('error', '✗ ' + (data.error || 'Connection failed. Please try again.'));
+        }
+      } catch {
+        spinner.classList.remove('visible');
+        btn.disabled = false;
+        showEmbeddedStatus('error', '✗ Could not reach WhatAgent API. Please try again.');
+      }
+    }, {
+      scope: config.scopes.join(','),
+      response_type: 'code',
+      override_default_response_type: true,
+    });
   }
 
   // ── Step 2 ─────────────────────────────────────────────
@@ -1377,17 +1470,17 @@
       const res = await fetch(API_BASE + '/v1/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, appName: 'WhatAgent Wizard' }),
+        body: JSON.stringify({ email, app_name: 'WhatAgent Wizard' }),
       });
       const data = await res.json();
       spinner.classList.remove('visible');
 
-      if (res.ok && data.apiKey) {
-        state.apiKey = data.apiKey;
-        document.getElementById('apiKeyText').textContent = data.apiKey;
-        document.getElementById('apiKeyInput').value = data.apiKey;
+      if (res.ok && data.api_key) {
+        state.apiKey = data.api_key;
+        document.getElementById('apiKeyText').textContent = data.api_key;
+        document.getElementById('apiKeyInput').value = data.api_key;
         document.getElementById('apiKeyResult').style.display = 'block';
-        document.getElementById('successApiKey').textContent = data.apiKey;
+        document.getElementById('successApiKey').textContent = data.api_key;
         updateConnectCmd();
       } else {
         showConnectStatus('error', '✗ ' + (data.error || 'Registration failed. Check the API is reachable.'));

@@ -12,6 +12,7 @@ import { stripeRouter } from './routes/stripe';
 import { accountsRouter } from './routes/accounts';
 import { bootstrapRouter } from './routes/bootstrap';
 import { authRouter } from './routes/auth';
+import { metaOauthRouter } from './routes/meta-oauth';
 import { statusRouter } from './routes/status';
 import { authMiddleware } from './middleware/auth';
 import { errorHandler } from './middleware/errorHandler';
@@ -69,6 +70,7 @@ app.use('/v1/webhooks', webhooksRouter);
 app.use('/v1/webhooks', stripeRouter);
 app.use('/v1/bootstrap', bootstrapRouter);
 app.use('/v1/auth', authRouter);
+app.use('/v1/auth/meta', metaOauthRouter);
 
 // Authenticated routes
 app.use('/v1/messages', authMiddleware, messagesRouter);
