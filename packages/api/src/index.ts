@@ -23,6 +23,9 @@ const REPO_ROOT = join(__dirname, '..');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust Railway's reverse proxy so express-rate-limit can read X-Forwarded-For correctly
+app.set('trust proxy', 1);
+
 // Security
 app.use(helmet());
 app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
