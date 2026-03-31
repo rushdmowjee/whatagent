@@ -92,6 +92,10 @@ async function runMigrations(pool: Pool): Promise<void> {
     await client.query(`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS billing_cycle_start TIMESTAMPTZ NOT NULL DEFAULT NOW()`);
     await client.query(`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT`);
 
+    // api_keys.account_id must not FK-reference accounts — register flow uses
+    // registrations.account_id which is not an accounts row
+    await client.query(`ALTER TABLE api_keys DROP CONSTRAINT IF EXISTS api_keys_account_id_fkey`);
+
     console.log('Database migrations applied');
   } finally {
     client.release();
