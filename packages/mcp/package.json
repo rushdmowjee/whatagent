@@ -1,6 +1,6 @@
 {
   "name": "@whatagent/mcp",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "MCP server for WhatAgent — send WhatsApp from Claude Code, Cursor, Windsurf, Cline, and Devin",
   "repository": {
     "type": "git",
