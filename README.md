@@ -88,7 +88,7 @@ WEBHOOK_VERIFY_TOKEN=whatagent_verify_2024
 
 ```bash
 # Bootstrap: create account + API key
-curl -X POST https://YOUR_URL/v1/accounts/bootstrap \
+curl -X POST https://YOUR_URL/v1/bootstrap \
   -H "Authorization: Bearer YOUR_BOOTSTRAP_SECRET" \
   -H "Content-Type: application/json" \
   -d '{

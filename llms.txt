@@ -24,9 +24,33 @@ API keys always start with `wha_`. If your key does not start with `wha_`, it is
 
 ## Quick Start — Copy-Paste curl Commands
 
-### Step 1: Bootstrap (first-time setup only)
+### Step 1a: Register (recommended — no server access needed)
 
-Creates your account and first API key. Uses your BOOTSTRAP_SECRET, not a wha_ key.
+Get an API key instantly with just an email. No server credentials required.
+
+```bash
+curl -X POST https://api.whatagent.dev/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "you@example.com",
+    "app_name": "My App"
+  }'
+```
+
+Response:
+```json
+{
+  "api_key": "wha_xxx",
+  "account_id": "acc_xxx",
+  "free_tier_remaining": 2000
+}
+```
+
+**Save the `api_key` — it will not be shown again.** Re-registering with the same email revokes the old key and issues a fresh one.
+
+### Step 1b: Bootstrap (self-hosted deployments only)
+
+Creates an account with Meta credentials in one step. Uses your BOOTSTRAP_SECRET, not a wha_ key. Only needed if you are running your own WhatAgent deployment.
 
 ```bash
 curl -X POST https://api.whatagent.dev/v1/bootstrap \
@@ -156,7 +180,8 @@ curl https://api.whatagent.dev/v1/status
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| POST | /v1/bootstrap | BOOTSTRAP_SECRET | First-time setup: create account + API key |
+| POST | /v1/auth/register | None | Register with email — get a wha_ API key instantly |
+| POST | /v1/bootstrap | BOOTSTRAP_SECRET | Self-hosted setup: create account + API key with Meta credentials |
 | POST | /v1/messages | Bearer wha_xxx | Send a WhatsApp message |
 | GET | /v1/messages | Bearer wha_xxx | List sent/received messages |
 | GET | /v1/messages/:id | Bearer wha_xxx | Get a single message |
