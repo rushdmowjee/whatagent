@@ -46,9 +46,60 @@ paths:
                     type: string
                     example: ok
 
+  /v1/auth/register:
+    post:
+      summary: Register — get a wha_ API key instantly
+      description: |
+        Zero-touch account creation. Provide an email and app name to get a `wha_` API key
+        with 2,000 free messages (hobby plan). No Meta credentials required at this step.
+
+        Idempotent: re-registering with the same email revokes the old key and issues a fresh one.
+        Rate limited to 3 registrations per IP per hour.
+      operationId: register
+      tags: [Setup]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, app_name]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: you@example.com
+                app_name:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                  example: My App
+      responses:
+        '201':
+          description: Registration successful — store the api_key, it will not be shown again
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  api_key:
+                    type: string
+                    example: wha_xxx
+                  account_id:
+                    type: string
+                    example: acc_xxx
+                  free_tier_remaining:
+                    type: integer
+                    example: 2000
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          description: Rate limit exceeded — too many registration attempts from this IP
+
   /v1/bootstrap:
     post:
-      summary: First-time setup — create account and API key
+      summary: First-time setup (self-hosted) — create account and API key with Meta credentials
       description: |
         Creates a new account and first API key in one step.
         Uses your `BOOTSTRAP_SECRET` environment variable, NOT a `wha_` key.

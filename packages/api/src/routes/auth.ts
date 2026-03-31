@@ -4,6 +4,7 @@ import rateLimit from 'express-rate-limit';
 import { getDb } from '../db/client';
 import { generateApiKey, generateId, hashApiKey } from '../services/crypto';
 import { captureAccountCreated } from '../services/analytics';
+import { PLAN_LIMITS } from '../services/plans';
 
 export const authRouter = Router();
 
@@ -71,6 +72,6 @@ authRouter.post('/register', registerLimiter, async (req: Request, res: Response
   res.status(201).json({
     api_key: apiKey,
     account_id: accountId,
-    free_tier_remaining: 1000,
+    free_tier_remaining: PLAN_LIMITS.hobby.messagesPerMonth,
   });
 });
