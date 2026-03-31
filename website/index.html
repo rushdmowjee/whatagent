@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WhatAgent — WhatsApp API for Developers and AI Agents</title>
+<meta name="description" content="The fastest way to send WhatsApp messages from code. Zero-config MCP for Claude Code, Cursor, and Windsurf. Free tier included. Start in 60 seconds." />
+<meta property="og:title" content="WhatAgent — WhatsApp API for Developers and AI Agents" />
+<meta property="og:description" content="One npx command. No Meta approval headaches. Send WhatsApp from any AI agent or app in 60 seconds." />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="WhatAgent — WhatsApp API for Developers and AI Agents" />
+<meta name="twitter:description" content="One npx command. Send WhatsApp from Claude Code, Cursor, Windsurf in 60 seconds." />
+
+<script>
+  !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]);t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(a!==void 0?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return a!=="posthog"&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+" (stub)"},o="capture identify alias people.set people.set_once set_config register register_once unregister opt_out_capturing has_opted_out_capturing opt_in_capturing reset isFeatureEnabled onFeatureFlags getFeatureFlag getFeatureFlagPayload reloadFeatureFlags group updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures getActiveMatchingSurveys getSurveys getNextSurveyStep".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+  posthog.init('phc_AZXE4hTgnGMBmUX2Yvmsq9jqlfJ4SIHtn7BeQ4k9o0Z',{api_host:'https://eu.posthog.com',person_profiles:'identified_only'});
+  (function(){var u=['utm_source','utm_medium','utm_campaign','utm_term','utm_content'];var p=new URLSearchParams(window.location.search);if(!u.some(function(k){return p.get(k)}))return;var e=new Date();e.setDate(e.getDate()+30);u.forEach(function(k){var v=p.get(k);if(v)document.cookie=k+'='+encodeURIComponent(v)+';expires='+e.toUTCString()+';path=/;SameSite=Lax'});})();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@300;400;500;600&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg:         #080e0a;
+  --bg2:        #0e1810;
+  --bg3:        #141f15;
+  --bg4:        #0b1510;
+  --border:     rgba(37,211,102,0.12);
+  --border2:    rgba(37,211,102,0.28);
+  --border3:    rgba(37,211,102,0.45);
+  --green:      #25D366;
+  --green2:     #1aad52;
+  --green-dim:  #19a348;
+  --green-glow: rgba(37,211,102,0.18);
+  --green-glow2:rgba(37,211,102,0.08);
+  --text:       #e8f0ea;
+  --text2:      #b8ccbe;
+  --muted:      #6a8c72;
+  --muted2:     #4a6652;
+  --code-bg:    #0a1a0c;
+  --radius:     12px;
+  --radius2:    8px;
+  --radius3:    20px;
+  --font-mono:  'Geist Mono', monospace;
+  --font-sans:  'Geist', sans-serif;
+  --font-serif: 'Instrument Serif', serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.65;
+  min-height: 100vh;
+  overflow-x: hidden;
+  cursor: none;
+}
+
+/* Custom cursor */
+.cursor { width:10px;height:10px;background:var(--green);border-radius:50%;position:fixed;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:transform .08s ease,opacity .2s;mix-blend-mode:screen; }
+.cursor-ring { width:28px;height:28px;border:1.5px solid var(--green);border-radius:50%;position:fixed;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);opacity:.35;transition:transform .18s ease,width .2s,height .2s,opacity .2s; }
+.cursor-ring.hover { width:40px;height:40px;opacity:.6; }
+
+/* Background grid */
+body::before {
+  content:'';position:fixed;inset:0;
+  background-image:linear-gradient(rgba(37,211,102,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(37,211,102,.025) 1px,transparent 1px);
+  background-size:48px 48px;pointer-events:none;z-index:0;
+}
+
+/* Radial glow */
+body::after {
+  content:'';position:fixed;inset:0;
+  background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(37,211,102,.09) 0%, transparent 65%);
+  pointer-events:none;z-index:0;
+}
+
+/* ─── NAV ─── */
+nav {
+  position: fixed;top:0;left:0;right:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 clamp(20px,4vw,60px);
+  height:64px;
+  background: rgba(8,14,10,.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-logo {
+  display:flex;align-items:center;gap:10px;
+  font-family:var(--font-mono);font-size:17px;font-weight:600;
+  color:var(--text);text-decoration:none;letter-spacing:-.3px;
+}
+.nav-logo .logo-icon {
+  width:32px;height:32px;
+  background: linear-gradient(135deg, var(--green), var(--green2));
+  border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;
+  box-shadow: 0 0 16px var(--green-glow);
+}
+.nav-links {
+  display:flex;align-items:center;gap:6px;
+  list-style:none;
+}
+.nav-links a {
+  color:var(--muted);font-size:14px;font-weight:400;
+  text-decoration:none;padding:6px 12px;border-radius:var(--radius2);
+  transition:color .15s,background .15s;
+}
+.nav-links a:hover { color:var(--text);background:rgba(255,255,255,.04); }
+.nav-cta {
+  display:flex;align-items:center;gap:10px;
+}
+.btn {
+  display:inline-flex;align-items:center;gap:8px;
+  padding:9px 20px;border-radius:var(--radius2);
+  font-family:var(--font-mono);font-size:13px;font-weight:500;
+  text-decoration:none;transition:all .2s;cursor:none;border:none;
+}
+.btn-ghost {
+  color:var(--text2);background:transparent;
+  border:1px solid var(--border2);
+}
+.btn-ghost:hover { color:var(--green);border-color:var(--green);background:var(--green-glow2); }
+.btn-primary {
+  color:#000;background:var(--green);
+  box-shadow:0 0 20px rgba(37,211,102,.3);
+}
+.btn-primary:hover { background:#2ee870;box-shadow:0 0 28px rgba(37,211,102,.45); }
+
+/* ─── HERO ─── */
+.hero {
+  position:relative;z-index:1;
+  min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding: 120px clamp(20px,5vw,80px) 80px;
+  text-align:center;
+  overflow:hidden;
+}
+
+.hero-badge {
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(37,211,102,.08);border:1px solid var(--border2);
+  border-radius:100px;padding:6px 14px;
+  font-family:var(--font-mono);font-size:12px;color:var(--green);
+  margin-bottom:32px;
+  animation: fadeUp .6s ease both;
+}
+.hero-badge .dot { width:6px;height:6px;background:var(--green);border-radius:50%;animation:pulse 2s ease infinite; }
+
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.8)} }
+@keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+.hero h1 {
+  font-family:var(--font-serif);
+  font-size: clamp(52px,7vw,96px);
+  line-height:1.05;
+  color:var(--text);
+  letter-spacing:-1.5px;
+  max-width:900px;
+  animation: fadeUp .7s .1s ease both;
+}
+.hero h1 em {
+  font-style:italic;
+  color:var(--green);
+  text-shadow:0 0 40px rgba(37,211,102,.4);
+}
+
+.hero-sub {
+  font-size:clamp(16px,2vw,20px);
+  color:var(--text2);
+  max-width:560px;
+  margin-top:20px;
+  line-height:1.6;
+  animation: fadeUp .7s .2s ease both;
+}
+
+.hero-actions {
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center;
+  margin-top:36px;
+  animation: fadeUp .7s .3s ease both;
+}
+.btn-hero {
+  padding:14px 28px;font-size:14px;border-radius:10px;
+}
+
+.hero-terminal {
+  margin-top:60px;
+  width:100%;max-width:560px;
+  background:var(--code-bg);
+  border:1px solid var(--border2);
+  border-radius:var(--radius);
+  overflow:hidden;
+  box-shadow:0 0 60px rgba(37,211,102,.08),0 32px 64px rgba(0,0,0,.6);
+  animation: fadeUp .8s .4s ease both;
+  text-align:left;
+}
+.terminal-bar {
+  display:flex;align-items:center;gap:8px;
+  padding:12px 16px;
+  background:rgba(0,0,0,.3);
+  border-bottom:1px solid var(--border);
+}
+.terminal-dot { width:10px;height:10px;border-radius:50%; }
+.terminal-dot:nth-child(1){background:#ff5f57}
+.terminal-dot:nth-child(2){background:#febc2e}
+.terminal-dot:nth-child(3){background:#28c840}
+.terminal-title {
+  margin-left:8px;font-family:var(--font-mono);font-size:11px;
+  color:var(--muted);flex:1;text-align:center;
+}
+.terminal-body {
+  padding:20px 24px;
+  font-family:var(--font-mono);font-size:13px;line-height:1.8;
+}
+.t-prompt { color:var(--muted); }
+.t-cmd    { color:var(--text); }
+.t-green  { color:var(--green); }
+.t-dim    { color:var(--muted); }
+.t-arrow  { color:var(--green);opacity:.7; }
+.t-line   { display:block;margin:.1em 0; }
+
+/* Typing cursor */
+.t-cursor {
+  display:inline-block;width:8px;height:14px;
+  background:var(--green);margin-left:2px;vertical-align:middle;
+  animation:blink .9s step-end infinite;
+}
+@keyframes blink { 0%,100%{opacity:1}50%{opacity:0} }
+
+/* ─── PROOF BAR ─── */
+.proof-bar {
+  position:relative;z-index:1;
+  padding:28px clamp(20px,5vw,80px);
+  border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+  background:rgba(14,24,16,.6);
+  overflow:hidden;
+}
+.proof-bar-inner {
+  display:flex;align-items:center;justify-content:center;gap:0;
+  white-space:nowrap;animation:scroll-x 28s linear infinite;
+  width:max-content;
+}
+@keyframes scroll-x { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+.proof-bar:hover .proof-bar-inner { animation-play-state:paused; }
+.proof-item {
+  display:inline-flex;align-items:center;gap:8px;
+  padding:0 28px;
+  font-family:var(--font-mono);font-size:12px;color:var(--muted);font-weight:400;
+  border-right:1px solid var(--border);
+}
+.proof-item:last-child { border-right:none; }
+.proof-item .tool-dot { width:6px;height:6px;border-radius:50%;background:var(--green);opacity:.5; }
+
+/* ─── SECTIONS ─── */
+.section {
+  position:relative;z-index:1;
+  padding:100px clamp(20px,5vw,80px);
+  max-width:1120px;margin:0 auto;
+}
+.section-label {
+  font-family:var(--font-mono);font-size:11px;font-weight:500;
+  color:var(--green);text-transform:uppercase;letter-spacing:2px;
+  margin-bottom:12px;
+}
+.section-title {
+  font-family:var(--font-serif);
+  font-size:clamp(36px,4.5vw,58px);
+  line-height:1.1;letter-spacing:-.8px;
+  color:var(--text);
+}
+.section-title em { font-style:italic;color:var(--green); }
+.section-sub {
+  font-size:17px;color:var(--text2);
+  max-width:520px;margin-top:12px;line-height:1.6;
+}
+
+/* ─── HOW IT WORKS ─── */
+.steps {
+  display:grid;grid-template-columns:repeat(3,1fr);gap:2px;
+  margin-top:56px;
+  border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;
+}
+.step {
+  padding:40px 32px;
+  background:var(--bg2);
+  border-right:1px solid var(--border);
+  position:relative;
+  transition:background .2s;
+}
+.step:last-child { border-right:none; }
+.step:hover { background:var(--bg3); }
+.step-num {
+  font-family:var(--font-mono);font-size:11px;font-weight:600;
+  color:var(--green);letter-spacing:1px;margin-bottom:16px;
+}
+.step-title { font-size:18px;font-weight:600;color:var(--text);margin-bottom:10px; }
+.step-desc { font-size:14px;color:var(--text2);line-height:1.6; }
+.step-code {
+  margin-top:16px;
+  background:var(--code-bg);border:1px solid var(--border);
+  border-radius:var(--radius2);padding:12px 16px;
+  font-family:var(--font-mono);font-size:12px;color:var(--green);
+  overflow-x:auto;
+}
+.step-glow {
+  position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--green),transparent);
+  opacity:0;transition:opacity .3s;
+}
+.step:hover .step-glow { opacity:1; }
+
+/* ─── USE CASES ─── */
+.cards {
+  display:grid;grid-template-columns:repeat(2,1fr);gap:16px;
+  margin-top:56px;
+}
+.card {
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--radius);padding:32px;
+  position:relative;overflow:hidden;
+  transition:border-color .2s,transform .2s,box-shadow .2s;
+}
+.card:hover {
+  border-color:var(--border2);
+  transform:translateY(-2px);
+  box-shadow:0 8px 32px rgba(0,0,0,.4),0 0 20px var(--green-glow2);
+}
+.card-icon {
+  width:44px;height:44px;border-radius:10px;
+  background:rgba(37,211,102,.1);border:1px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;margin-bottom:20px;
+}
+.card-title { font-size:17px;font-weight:600;color:var(--text);margin-bottom:8px; }
+.card-desc { font-size:14px;color:var(--text2);line-height:1.6; }
+.card-corner {
+  position:absolute;top:0;right:0;
+  width:80px;height:80px;
+  background:radial-gradient(circle at top right,rgba(37,211,102,.08),transparent 70%);
+}
+
+/* ─── COMPARISON ─── */
+.comparison-wrap {
+  margin-top:56px;
+  border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;
+}
+table {
+  width:100%;border-collapse:collapse;
+  font-family:var(--font-sans);
+}
+thead tr {
+  background:var(--bg3);border-bottom:1px solid var(--border2);
+}
+th {
+  padding:16px 24px;font-size:13px;font-weight:600;
+  text-align:left;color:var(--text2);letter-spacing:.3px;
+}
+th:first-child { width:32%; }
+th.highlight { color:var(--green); }
+tbody tr {
+  border-bottom:1px solid var(--border);
+  transition:background .15s;
+}
+tbody tr:last-child { border-bottom:none; }
+tbody tr:hover { background:rgba(37,211,102,.03); }
+td {
+  padding:14px 24px;font-size:14px;color:var(--text2);
+}
+td:first-child { color:var(--text);font-weight:500; }
+.check { color:var(--green);font-size:16px; }
+.cross { color:var(--muted2);font-size:16px; }
+.highlight-col { background:rgba(37,211,102,.04); }
+
+/* ─── PRICING ─── */
+.pricing-grid {
+  display:grid;grid-template-columns:repeat(4,1fr);gap:16px;
+  margin-top:56px;
+}
+.price-card {
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--radius);padding:28px 24px;
+  position:relative;overflow:hidden;
+  transition:border-color .2s,transform .2s;
+}
+.price-card:hover { border-color:var(--border2);transform:translateY(-2px); }
+.price-card.featured {
+  border-color:var(--green);
+  background:rgba(37,211,102,.04);
+  box-shadow:0 0 40px rgba(37,211,102,.1);
+}
+.price-badge {
+  position:absolute;top:16px;right:16px;
+  background:var(--green);color:#000;
+  font-family:var(--font-mono);font-size:10px;font-weight:600;
+  padding:3px 8px;border-radius:100px;letter-spacing:.5px;
+}
+.price-plan {
+  font-family:var(--font-mono);font-size:12px;font-weight:600;
+  color:var(--green);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;
+}
+.price-amount {
+  font-family:var(--font-serif);font-size:42px;line-height:1;color:var(--text);margin-bottom:4px;
+}
+.price-amount sup { font-size:20px;vertical-align:top;margin-top:8px;font-family:var(--font-sans); }
+.price-period {
+  font-size:13px;color:var(--muted);margin-bottom:20px;
+  font-family:var(--font-mono);
+}
+.price-divider {
+  height:1px;background:var(--border);margin:16px 0;
+}
+.price-feature {
+  display:flex;align-items:center;gap:8px;
+  font-size:13px;color:var(--text2);margin-bottom:8px;
+}
+.price-feature .pf-check { color:var(--green);font-size:13px; }
+.price-cta {
+  margin-top:24px;width:100%;text-align:center;
+  padding:10px;border-radius:var(--radius2);
+  font-family:var(--font-mono);font-size:13px;font-weight:500;
+  text-decoration:none;display:block;cursor:none;
+  border:1px solid var(--border2);color:var(--text2);
+  transition:all .2s;
+}
+.price-cta:hover { border-color:var(--green);color:var(--green);background:var(--green-glow2); }
+.price-card.featured .price-cta {
+  background:var(--green);color:#000;border-color:var(--green);
+}
+.price-card.featured .price-cta:hover {
+  background:#2ee870;box-shadow:0 0 20px rgba(37,211,102,.3);
+}
+
+/* ─── INTEGRATIONS ─── */
+.integrations-grid {
+  display:grid;grid-template-columns:repeat(4,1fr);gap:12px;
+  margin-top:56px;
+}
+.integration-item {
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--radius);padding:24px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  text-align:center;
+  transition:border-color .2s,transform .2s,box-shadow .2s;
+}
+.integration-item:hover {
+  border-color:var(--border2);transform:translateY(-2px);
+  box-shadow:0 4px 20px rgba(0,0,0,.3);
+}
+.integration-logo {
+  width:40px;height:40px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--bg3);border:1px solid var(--border);
+  font-size:22px;
+}
+.integration-name {
+  font-family:var(--font-mono);font-size:12px;color:var(--text2);font-weight:500;
+}
+.integration-status {
+  font-size:10px;color:var(--green);background:rgba(37,211,102,.1);
+  border:1px solid rgba(37,211,102,.2);border-radius:100px;
+  padding:2px 8px;font-family:var(--font-mono);
+}
+
+/* ─── CTA SECTION ─── */
+.cta-section {
+  position:relative;z-index:1;
+  padding:100px clamp(20px,5vw,80px);
+  text-align:center;
+  overflow:hidden;
+}
+.cta-inner {
+  max-width:680px;margin:0 auto;
+  position:relative;z-index:2;
+}
+.cta-glow {
+  position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  width:600px;height:400px;
+  background:radial-gradient(ellipse,rgba(37,211,102,.1) 0%,transparent 70%);
+  pointer-events:none;
+}
+.cta-title {
+  font-family:var(--font-serif);
+  font-size:clamp(40px,5vw,68px);
+  line-height:1.08;letter-spacing:-.8px;color:var(--text);
+  margin-bottom:20px;
+}
+.cta-title em { font-style:italic;color:var(--green); }
+.cta-sub { font-size:17px;color:var(--text2);margin-bottom:36px;line-height:1.6; }
+.cta-cmd {
+  display:inline-flex;align-items:center;gap:12px;
+  background:var(--code-bg);border:1px solid var(--border2);
+  border-radius:var(--radius2);padding:14px 24px;
+  font-family:var(--font-mono);font-size:15px;color:var(--green);
+  margin-bottom:32px;cursor:pointer;transition:border-color .2s;
+}
+.cta-cmd:hover { border-color:var(--green); }
+.cta-cmd .copy-icon { color:var(--muted);font-size:13px;transition:color .2s; }
+.cta-cmd:hover .copy-icon { color:var(--green); }
+
+/* ─── FOOTER ─── */
+footer {
+  position:relative;z-index:1;
+  padding:48px clamp(20px,5vw,80px);
+  border-top:1px solid var(--border);
+  background:rgba(8,14,10,.8);
+}
+.footer-inner {
+  max-width:1120px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;gap:24px;
+  flex-wrap:wrap;
+}
+.footer-logo {
+  font-family:var(--font-mono);font-size:15px;font-weight:600;color:var(--text);
+  text-decoration:none;
+}
+.footer-links {
+  display:flex;gap:4px;flex-wrap:wrap;list-style:none;
+}
+.footer-links a {
+  color:var(--muted);font-size:13px;text-decoration:none;
+  padding:4px 10px;border-radius:6px;transition:color .15s;
+}
+.footer-links a:hover { color:var(--text); }
+.footer-copy {
+  font-family:var(--font-mono);font-size:11px;color:var(--muted2);
+}
+
+/* ─── SCROLL REVEAL ─── */
+.reveal {
+  opacity:0;transform:translateY(20px);
+  transition:opacity .6s ease,transform .6s ease;
+}
+.reveal.visible { opacity:1;transform:translateY(0); }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 900px) {
+  .steps { grid-template-columns:1fr; }
+  .step { border-right:none;border-bottom:1px solid var(--border); }
+  .step:last-child { border-bottom:none; }
+  .cards { grid-template-columns:1fr; }
+  .pricing-grid { grid-template-columns:repeat(2,1fr); }
+  .integrations-grid { grid-template-columns:repeat(2,1fr); }
+  .nav-links { display:none; }
+}
+@media (max-width: 600px) {
+  .pricing-grid { grid-template-columns:1fr; }
+  .integrations-grid { grid-template-columns:repeat(2,1fr); }
+  .footer-inner { flex-direction:column;align-items:flex-start; }
+  .comparison-wrap { overflow-x:auto; }
+  table { min-width:600px; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- NAV -->
+<nav>
+  <a href="/" class="nav-logo">
+    <span class="logo-icon">💬</span>
+    WhatAgent
+  </a>
+  <ul class="nav-links">
+    <li><a href="#how-it-works">How it works</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+    <li><a href="#integrations">Integrations</a></li>
+    <li><a href="https://github.com/rushdmowjee/whatagent">Docs</a></li>
+  </ul>
+  <div class="nav-cta">
+    <a href="https://github.com/rushdmowjee/whatagent" class="btn btn-ghost">GitHub</a>
+    <a href="/setup" class="btn btn-primary">Get started free</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">
+    <span class="dot"></span>
+    Zero-config WhatsApp API — works in 60 seconds
+  </div>
+
+  <h1>Send WhatsApp<br>from <em>any app.</em></h1>
+
+  <p class="hero-sub">
+    WhatAgent is the fastest way for developers and AI agents to send WhatsApp messages from code. One API call. No Meta approval headaches. Working in 60 seconds.
+  </p>
+
+  <div class="hero-actions">
+    <a href="/setup" class="btn btn-primary btn-hero">
+      <span>Get started free</span>
+      <span>→</span>
+    </a>
+    <a href="https://github.com/rushdmowjee/whatagent" class="btn btn-ghost btn-hero">View on GitHub</a>
+  </div>
+
+  <div class="hero-terminal">
+    <div class="terminal-bar">
+      <div class="terminal-dot"></div>
+      <div class="terminal-dot"></div>
+      <div class="terminal-dot"></div>
+      <span class="terminal-title">terminal — claude-code</span>
+    </div>
+    <div class="terminal-body" id="terminalBody">
+      <span class="t-line"><span class="t-prompt">$ </span><span class="t-cmd" id="termCmd"></span><span class="t-cursor" id="termCursor"></span></span>
+      <div id="termOutput" style="margin-top:6px;display:none;">
+        <span class="t-line t-green">✓ WhatAgent MCP running on port 3457</span>
+        <span class="t-line t-green">✓ Connected to Claude Code</span>
+        <span class="t-line" style="color:var(--muted);margin-top:4px;">→ <span style="color:var(--text2);">Tell Claude: "Send a WhatsApp to +1234567890 saying hello"</span></span>
+        <span class="t-line" style="color:var(--muted);margin-top:4px;">→ <span style="color:var(--text2);">Message delivered ✓</span></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROOF BAR -->
+<div class="proof-bar">
+  <div class="proof-bar-inner" id="proofBar">
+    <span class="proof-item"><span class="tool-dot"></span>Claude Code</span>
+    <span class="proof-item"><span class="tool-dot"></span>Cursor</span>
+    <span class="proof-item"><span class="tool-dot"></span>Windsurf</span>
+    <span class="proof-item"><span class="tool-dot"></span>Cline</span>
+    <span class="proof-item"><span class="tool-dot"></span>Devin</span>
+    <span class="proof-item"><span class="tool-dot"></span>Replit</span>
+    <span class="proof-item"><span class="tool-dot"></span>Lovable</span>
+    <span class="proof-item"><span class="tool-dot"></span>Bolt.new</span>
+    <span class="proof-item"><span class="tool-dot"></span>Claude Code</span>
+    <span class="proof-item"><span class="tool-dot"></span>Cursor</span>
+    <span class="proof-item"><span class="tool-dot"></span>Windsurf</span>
+    <span class="proof-item"><span class="tool-dot"></span>Cline</span>
+    <span class="proof-item"><span class="tool-dot"></span>Devin</span>
+    <span class="proof-item"><span class="tool-dot"></span>Replit</span>
+    <span class="proof-item"><span class="tool-dot"></span>Lovable</span>
+    <span class="proof-item"><span class="tool-dot"></span>Bolt.new</span>
+  </div>
+</div>
+
+<!-- HOW IT WORKS -->
+<section class="section reveal" id="how-it-works">
+  <div class="section-label">How it works</div>
+  <h2 class="section-title">Up and running in <em>three steps</em></h2>
+  <p class="section-sub">No Meta Business Manager rabbit holes. No sandbox approval wait. Just install, connect, and send.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-glow"></div>
+      <div class="step-num">01 — INSTALL</div>
+      <div class="step-title">One command</div>
+      <p class="step-desc">Run a single npx command. No config files. No environment variables needed to start. WhatAgent installs and starts automatically.</p>
+      <div class="step-code">npx @whatagent/mcp</div>
+    </div>
+    <div class="step">
+      <div class="step-glow"></div>
+      <div class="step-num">02 — CONNECT</div>
+      <div class="step-title">Your AI agent detects it</div>
+      <p class="step-desc">Claude Code, Cursor, or Windsurf automatically detects WhatAgent. The setup wizard walks through Meta credentials in under 2 minutes.</p>
+      <div class="step-code">✓ WhatAgent MCP detected<br>→ Open setup wizard</div>
+    </div>
+    <div class="step">
+      <div class="step-glow"></div>
+      <div class="step-num">03 — SEND</div>
+      <div class="step-title">Real WhatsApp, instantly</div>
+      <p class="step-desc">Ask your AI agent in plain English, or use the SDK directly. Real WhatsApp. Real delivery. No queues, no delays.</p>
+      <div class="step-code">await wa.messages.send({<br>&nbsp;&nbsp;to: "+1234567890",<br>&nbsp;&nbsp;text: "Hello!"<br>})</div>
+    </div>
+  </div>
+</section>
+
+<!-- USE CASES -->
+<section class="section reveal">
+  <div class="section-label">Use cases</div>
+  <h2 class="section-title">Built for <em>vibe coders</em><br>and AI agents</h2>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-corner"></div>
+      <div class="card-icon">🤖</div>
+      <div class="card-title">AI Agents</div>
+      <p class="card-desc">Give your AI agent a voice. Let it notify users, request approvals, or send alerts via WhatsApp — the channel they actually check. Works natively with Claude Code, Cursor, and Windsurf via MCP.</p>
+    </div>
+    <div class="card">
+      <div class="card-corner"></div>
+      <div class="card-icon">🔔</div>
+      <div class="card-title">Notifications & Alerts</div>
+      <p class="card-desc">Order confirmations, shipping updates, OTP codes, system alerts. Skip email. Go where your users are. WhatAgent handles delivery, status tracking, and retries automatically.</p>
+    </div>
+    <div class="card">
+      <div class="card-corner"></div>
+      <div class="card-icon">⚡</div>
+      <div class="card-title">Side Projects</div>
+      <p class="card-desc">You're building something fast. You don't have time for Meta Business Manager approvals and Twilio trials. WhatAgent just works — free tier, no credit card, no wait.</p>
+    </div>
+    <div class="card">
+      <div class="card-corner"></div>
+      <div class="card-icon">🎨</div>
+      <div class="card-title">Vibe Coded Apps</div>
+      <p class="card-desc">Built with Lovable, Bolt, or Replit? Add WhatsApp messaging in 60 seconds without leaving your AI coding tool. WhatAgent is listed on every major MCP marketplace.</p>
+    </div>
+  </div>
+</section>
+
+<!-- COMPARISON -->
+<section class="section reveal">
+  <div class="section-label">Comparison</div>
+  <h2 class="section-title">Why developers <em>choose WhatAgent</em></h2>
+  <p class="section-sub">We built the thing that should have existed years ago.</p>
+
+  <div class="comparison-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th class="highlight">WhatAgent</th>
+          <th>Twilio</th>
+          <th>360dialog</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Setup time</td>
+          <td class="highlight-col"><span class="check">60 seconds</span></td>
+          <td>Days–weeks</td>
+          <td>Days</td>
+        </tr>
+        <tr>
+          <td>Meta Business approval</td>
+          <td class="highlight-col"><span class="check">✓ Included in setup wizard</span></td>
+          <td><span class="cross">You handle it</span></td>
+          <td><span class="cross">You handle it</span></td>
+        </tr>
+        <tr>
+          <td>MCP / Claude Code support</td>
+          <td class="highlight-col"><span class="check">✓ Native, zero-config</span></td>
+          <td><span class="cross">✗</span></td>
+          <td><span class="cross">✗</span></td>
+        </tr>
+        <tr>
+          <td>Free tier</td>
+          <td class="highlight-col"><span class="check">✓ 2,000 messages</span></td>
+          <td>Trial only</td>
+          <td><span class="cross">✗</span></td>
+        </tr>
+        <tr>
+          <td>Pricing model</td>
+          <td class="highlight-col"><span class="check">Simple flat tiers</span></td>
+          <td>Complex per-segment</td>
+          <td>Complex</td>
+        </tr>
+        <tr>
+          <td>Vibe coder friendly</td>
+          <td class="highlight-col"><span class="check">✓ Built for it</span></td>
+          <td><span class="cross">No</span></td>
+          <td><span class="cross">No</span></td>
+        </tr>
+        <tr>
+          <td>llms.txt + OpenAPI</td>
+          <td class="highlight-col"><span class="check">✓ AI-first docs</span></td>
+          <td><span class="cross">No</span></td>
+          <td><span class="cross">No</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="section reveal" id="pricing">
+  <div class="section-label">Pricing</div>
+  <h2 class="section-title">Simple pricing.<br><em>Free to start.</em></h2>
+  <p class="section-sub">No credit card required. Meta message fees are billed directly by Meta — WhatAgent charges only for platform access.</p>
+
+  <div class="pricing-grid">
+    <div class="price-card">
+      <div class="price-plan">Hobby</div>
+      <div class="price-amount"><sup>$</sup>0</div>
+      <div class="price-period">forever free</div>
+      <div class="price-divider"></div>
+      <div class="price-feature"><span class="pf-check">✓</span> 2,000 messages/mo</div>
+      <div class="price-feature"><span class="pf-check">✓</span> 1 WhatsApp number</div>
+      <div class="price-feature"><span class="pf-check">✓</span> MCP + REST API</div>
+      <div class="price-feature"><span class="pf-check">✓</span> Community support</div>
+      <a href="/setup" class="price-cta">Get started</a>
+    </div>
+
+    <div class="price-card featured">
+      <div class="price-badge">POPULAR</div>
+      <div class="price-plan">Developer</div>
+      <div class="price-amount"><sup>$</sup>29</div>
+      <div class="price-period">per month</div>
+      <div class="price-divider"></div>
+      <div class="price-feature"><span class="pf-check">✓</span> 100,000 messages/mo</div>
+      <div class="price-feature"><span class="pf-check">✓</span> 3 WhatsApp numbers</div>
+      <div class="price-feature"><span class="pf-check">✓</span> Email support (48hr)</div>
+      <div class="price-feature"><span class="pf-check">✓</span> Analytics dashboard</div>
+      <a href="/setup" class="price-cta">Start free trial</a>
+    </div>
+
+    <div class="price-card">
+      <div class="price-plan">Scale</div>
+      <div class="price-amount"><sup>$</sup>99</div>
+      <div class="price-period">per month</div>
+      <div class="price-divider"></div>
+      <div class="price-feature"><span class="pf-check">✓</span> 500,000 messages/mo</div>
+      <div class="price-feature"><span class="pf-check">✓</span> 10 WhatsApp numbers</div>
+      <div class="price-feature"><span class="pf-check">✓</span> Priority email (24hr)</div>
+      <div class="price-feature"><span class="pf-check">✓</span> Advanced analytics</div>
+      <a href="/setup" class="price-cta">Get started</a>
+    </div>
+
+    <div class="price-card">
+      <div class="price-plan">Enterprise</div>
+      <div class="price-amount" style="font-size:28px;padding-top:8px;">Custom</div>
+      <div class="price-period">volume pricing</div>
+      <div class="price-divider"></div>
+      <div class="price-feature"><span class="pf-check">✓</span> Unlimited messages</div>
+      <div class="price-feature"><span class="pf-check">✓</span> Unlimited numbers</div>
+      <div class="price-feature"><span class="pf-check">✓</span> Dedicated CSM + SLA</div>
+      <div class="price-feature"><span class="pf-check">✓</span> Custom integrations</div>
+      <a href="mailto:hello@whatagent.io" class="price-cta">Talk to us</a>
+    </div>
+  </div>
+
+  <p style="text-align:center;margin-top:20px;font-family:var(--font-mono);font-size:12px;color:var(--muted);">
+    Annual billing: 20% discount · Extra numbers: $8/mo add-on
+  </p>
+</section>
+
+<!-- INTEGRATIONS -->
+<section class="section reveal" id="integrations">
+  <div class="section-label">Integrations</div>
+  <h2 class="section-title">Zero-config with every<br><em>major AI coding tool</em></h2>
+  <p class="section-sub">WhatAgent is listed on all major MCP marketplaces. One npx command installs it anywhere.</p>
+
+  <div class="integrations-grid">
+    <div class="integration-item">
+      <div class="integration-logo">🤖</div>
+      <div class="integration-name">Claude Code</div>
+      <div class="integration-status">Native MCP</div>
+    </div>
+    <div class="integration-item">
+      <div class="integration-logo">⚡</div>
+      <div class="integration-name">Cursor</div>
+      <div class="integration-status">Native MCP</div>
+    </div>
+    <div class="integration-item">
+      <div class="integration-logo">🌊</div>
+      <div class="integration-name">Windsurf</div>
+      <div class="integration-status">Native MCP</div>
+    </div>
+    <div class="integration-item">
+      <div class="integration-logo">🔧</div>
+      <div class="integration-name">Cline</div>
+      <div class="integration-status">Native MCP</div>
+    </div>
+    <div class="integration-item">
+      <div class="integration-logo">🦾</div>
+      <div class="integration-name">Devin</div>
+      <div class="integration-status">Native MCP</div>
+    </div>
+    <div class="integration-item">
+      <div class="integration-logo">🔁</div>
+      <div class="integration-name">Replit</div>
+      <div class="integration-status">Native MCP</div>
+    </div>
+    <div class="integration-item">
+      <div class="integration-logo">💜</div>
+      <div class="integration-name">Lovable</div>
+      <div class="integration-status">REST API</div>
+    </div>
+    <div class="integration-item">
+      <div class="integration-logo">⚡</div>
+      <div class="integration-name">Bolt.new</div>
+      <div class="integration-status">REST API</div>
+    </div>
+  </div>
+
+  <div style="margin-top:40px;padding:24px 32px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);font-family:var(--font-mono);font-size:13px;">
+    <div style="color:var(--muted);margin-bottom:8px;">// Add to .mcp.json in any project</div>
+    <div style="color:var(--text2);">{</div>
+    <div style="color:var(--text2);padding-left:20px;">"mcpServers": {</div>
+    <div style="color:var(--text2);padding-left:40px;">"whatagent": {</div>
+    <div style="color:var(--text2);padding-left:60px;">"command": "npx",</div>
+    <div style="color:var(--text2);padding-left:60px;">"args": ["-y", "<span style="color:var(--green);">@whatagent/mcp</span>"],</div>
+    <div style="color:var(--text2);padding-left:60px;">"env": { "<span style="color:var(--green);">WHATAGENT_API_KEY</span>": "wha_..." }</div>
+    <div style="color:var(--text2);padding-left:40px;">}</div>
+    <div style="color:var(--text2);padding-left:20px;">}</div>
+    <div style="color:var(--text2);">}</div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section reveal">
+  <div class="cta-glow"></div>
+  <div class="cta-inner">
+    <h2 class="cta-title">Start sending WhatsApp<br>in <em>60 seconds</em></h2>
+    <p class="cta-sub">Free tier. No credit card. No Meta approval wait. Just run one command and start messaging.</p>
+
+    <div class="cta-cmd" onclick="copyCmd(this)">
+      <span>npx @whatagent/mcp</span>
+      <span class="copy-icon">⎘ copy</span>
+    </div>
+
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+      <a href="/setup" class="btn btn-primary" style="font-size:15px;padding:14px 32px;">Get started free →</a>
+      <a href="https://github.com/rushdmowjee/whatagent" class="btn btn-ghost" style="font-size:15px;padding:14px 32px;">View on GitHub</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <a href="/" class="footer-logo">WhatAgent</a>
+    <ul class="footer-links">
+      <li><a href="/docs">Docs</a></li>
+      <li><a href="https://github.com/rushdmowjee/whatagent">GitHub</a></li>
+      <li><a href="https://twitter.com/whatagent">Twitter</a></li>
+      <li><a href="#pricing">Pricing</a></li>
+      <li><a href="mailto:hello@whatagent.io">Support</a></li>
+      <li><a href="/privacy">Privacy</a></li>
+      <li><a href="/terms">Terms</a></li>
+    </ul>
+    <span class="footer-copy">© 2026 WhatAgent</span>
+  </div>
+</footer>
+
+<script>
+// ─── Custom cursor ───
+const cursor = document.getElementById('cursor');
+const ring = document.getElementById('cursorRing');
+document.addEventListener('mousemove', e => {
+  cursor.style.left = e.clientX + 'px';
+  cursor.style.top  = e.clientY + 'px';
+  setTimeout(() => {
+    ring.style.left = e.clientX + 'px';
+    ring.style.top  = e.clientY + 'px';
+  }, 60);
+});
+document.querySelectorAll('a,button,.cta-cmd,.price-cta').forEach(el => {
+  el.addEventListener('mouseenter', () => ring.classList.add('hover'));
+  el.addEventListener('mouseleave', () => ring.classList.remove('hover'));
+});
+
+// ─── Terminal typing animation ───
+const cmd = 'npx @whatagent/mcp';
+const el  = document.getElementById('termCmd');
+const out = document.getElementById('termOutput');
+const tc  = document.getElementById('termCursor');
+let i = 0;
+function typeChar() {
+  if (i < cmd.length) {
+    el.textContent += cmd[i++];
+    setTimeout(typeChar, 55 + Math.random() * 40);
+  } else {
+    tc.style.display = 'none';
+    setTimeout(() => { out.style.display = 'block'; }, 400);
+  }
+}
+setTimeout(typeChar, 900);
+
+// ─── Scroll reveal ───
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      observer.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// ─── Copy command ───
+function copyCmd(el) {
+  navigator.clipboard.writeText('npx @whatagent/mcp').then(() => {
+    const icon = el.querySelector('.copy-icon');
+    icon.textContent = '✓ copied';
+    icon.style.color = 'var(--green)';
+    setTimeout(() => {
+      icon.textContent = '⎘ copy';
+      icon.style.color = '';
+    }, 2000);
+  });
+}
+
+// ─── PostHog events ───
+document.querySelectorAll('.btn-primary, .price-cta, .cta-cmd').forEach(el => {
+  el.addEventListener('click', () => {
+    if (window.posthog) posthog.capture('cta_clicked', { label: el.textContent.trim() });
+  });
+});
+</script>
+
+</body>
+</html>
