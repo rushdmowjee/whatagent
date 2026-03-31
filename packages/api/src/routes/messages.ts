@@ -5,6 +5,7 @@ import { getDb } from '../db/client';
 import { generateId, decrypt } from '../services/crypto';
 import { sendTextMessage, sendTemplateMessage, sendImageMessage } from '../services/meta';
 import { captureMessageSent } from '../services/analytics';
+import { getPlanLimits } from '../services/plans';
 
 export const messagesRouter = Router();
 
@@ -45,7 +46,7 @@ messagesRouter.post('/', (async (req: Request, res: Response): Promise<void> => 
 
   const db = getDb();
   const account = await db.query(
-    `SELECT id, phone_number_id, access_token_encrypted FROM accounts WHERE id = $1`,
+    `SELECT id, phone_number_id, access_token_encrypted, plan, messages_used, billing_cycle_start FROM accounts WHERE id = $1`,
     [authed.accountId]
   );
 
@@ -54,7 +55,34 @@ messagesRouter.post('/', (async (req: Request, res: Response): Promise<void> => 
     return;
   }
 
-  const { phone_number_id: phoneNumberId, access_token_encrypted } = account.rows[0];
+  const { phone_number_id: phoneNumberId, access_token_encrypted, plan, billing_cycle_start, messages_used: rawMessagesUsed } = account.rows[0];
+
+  // Reset monthly counter if billing cycle has rolled over
+  const cycleStart = new Date(billing_cycle_start);
+  const now = new Date();
+  const cycleExpired = now >= new Date(cycleStart.getFullYear(), cycleStart.getMonth() + 1, cycleStart.getDate());
+  let messagesUsed: number = parseInt(rawMessagesUsed, 10);
+  if (cycleExpired) {
+    await db.query(
+      `UPDATE accounts SET messages_used = 0, billing_cycle_start = NOW() WHERE id = $1`,
+      [authed.accountId]
+    );
+    messagesUsed = 0;
+  }
+
+  // Enforce message quota
+  const limits = getPlanLimits(plan);
+  if (isFinite(limits.messagesPerMonth) && messagesUsed >= limits.messagesPerMonth) {
+    res.status(429).json({
+      error: 'Message quota exceeded',
+      plan,
+      messages_used: messagesUsed,
+      messages_limit: limits.messagesPerMonth,
+      detail: `Your ${plan} plan allows ${limits.messagesPerMonth.toLocaleString()} messages per month. Upgrade at https://whatagent.dev/pricing.`,
+    });
+    return;
+  }
+
   const accessToken = decrypt(access_token_encrypted);
   const data = parsed.data;
   const messageId = generateId();
@@ -83,6 +111,8 @@ messagesRouter.post('/', (async (req: Request, res: Response): Promise<void> => 
        VALUES ($1, $2, 'outbound', $3, $4, $5, $6, $7, 'sent', NOW(), NOW(), NOW())`,
       [messageId, authed.accountId, data.to, data.type, data.type === 'text' ? data.text : null, data.type === 'template' ? data.template.name : null, metaMessageId]
     );
+
+    await db.query(`UPDATE accounts SET messages_used = messages_used + 1 WHERE id = $1`, [authed.accountId]);
 
     captureMessageSent(authed.accountId, isFirst, { message_type: data.type, to: data.to });
 

@@ -4,6 +4,7 @@ import { AuthedRequest } from '../middleware/auth';
 import { getDb } from '../db/client';
 import { encrypt, generateApiKey, generateId, hashApiKey } from '../services/crypto';
 import { validateCredentials } from '../services/meta';
+import { getPlanLimits } from '../services/plans';
 
 export const accountsRouter = Router();
 
@@ -71,7 +72,7 @@ accountsRouter.get('/me', (async (req: Request, res: Response): Promise<void> =>
   const authed = req as AuthedRequest;
   const db = getDb();
   const result = await db.query(
-    `SELECT id, phone_number_id, waba_id, webhook_url, webhook_verify_token, created_at, updated_at
+    `SELECT id, phone_number_id, waba_id, webhook_url, webhook_verify_token, plan, messages_used, billing_cycle_start, created_at, updated_at
      FROM accounts WHERE id = $1`,
     [authed.accountId]
   );
@@ -81,7 +82,13 @@ accountsRouter.get('/me', (async (req: Request, res: Response): Promise<void> =>
     return;
   }
 
-  res.json(result.rows[0]);
+  const row = result.rows[0];
+  const limits = getPlanLimits(row.plan);
+  res.json({
+    ...row,
+    messages_limit: isFinite(limits.messagesPerMonth) ? limits.messagesPerMonth : null,
+    numbers_limit: isFinite(limits.numbers) ? limits.numbers : null,
+  });
 }) as RequestHandler);
 
 // POST /v1/accounts/keys — generate a new API key

@@ -8,6 +8,7 @@ import rateLimit from 'express-rate-limit';
 
 import { messagesRouter } from './routes/messages';
 import { webhooksRouter } from './routes/webhooks';
+import { stripeRouter } from './routes/stripe';
 import { accountsRouter } from './routes/accounts';
 import { bootstrapRouter } from './routes/bootstrap';
 import { statusRouter } from './routes/status';
@@ -27,6 +28,7 @@ app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
 
 // Body parsing — raw for webhook verification, JSON for everything else
 app.use('/v1/webhooks/meta', express.raw({ type: 'application/json' }));
+app.use('/v1/webhooks/stripe', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '1mb' }));
 
 // Rate limiting
@@ -60,6 +62,7 @@ app.get('/openapi.yaml', (_req, res) => {
 // Public routes
 app.use('/v1/status', statusRouter);
 app.use('/v1/webhooks', webhooksRouter);
+app.use('/v1/webhooks', stripeRouter);
 app.use('/v1/bootstrap', bootstrapRouter);
 
 // Authenticated routes

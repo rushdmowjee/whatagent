@@ -44,6 +44,10 @@ async function runMigrations(pool: Pool): Promise<void> {
         access_token_encrypted TEXT NOT NULL,
         webhook_url TEXT,
         webhook_verify_token TEXT NOT NULL DEFAULT 'whatagent_verify_2024',
+        plan TEXT NOT NULL DEFAULT 'hobby',
+        messages_used INTEGER NOT NULL DEFAULT 0,
+        billing_cycle_start TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        stripe_customer_id TEXT,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       );
@@ -73,6 +77,13 @@ async function runMigrations(pool: Pool): Promise<void> {
       CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_messages_meta_message_id ON messages(meta_message_id);
     `);
+
+    // Additive migrations for existing databases
+    await client.query(`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS plan TEXT NOT NULL DEFAULT 'hobby'`);
+    await client.query(`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS messages_used INTEGER NOT NULL DEFAULT 0`);
+    await client.query(`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS billing_cycle_start TIMESTAMPTZ NOT NULL DEFAULT NOW()`);
+    await client.query(`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT`);
+
     console.log('Database migrations applied');
   } finally {
     client.release();
