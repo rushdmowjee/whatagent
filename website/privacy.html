@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy Policy — WhatAgent</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080e0a;
+  --bg2: #0e1810;
+  --border: rgba(37,211,102,0.12);
+  --green: #25D366;
+  --text: #e8f0ea;
+  --text2: #b8ccbe;
+  --muted: #6a8c72;
+  --font-sans: 'Geist', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-sans); font-size: 15px; line-height: 1.7; }
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 clamp(20px,4vw,60px); height: 64px;
+  background: rgba(8,14,10,.9); backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-logo { font-size: 17px; font-weight: 600; color: var(--text); text-decoration: none; }
+.page-content { max-width: 720px; margin: 0 auto; padding: 120px 24px 80px; }
+h1 { font-size: 36px; font-weight: 600; margin-bottom: 8px; }
+.updated { color: var(--muted); font-size: 13px; margin-bottom: 48px; }
+h2 { font-size: 18px; font-weight: 600; color: var(--text); margin: 40px 0 12px; }
+p { color: var(--text2); margin-bottom: 16px; }
+ul { color: var(--text2); padding-left: 24px; margin-bottom: 16px; }
+ul li { margin-bottom: 8px; }
+a { color: var(--green); text-decoration: none; }
+a:hover { text-decoration: underline; }
+footer { text-align: center; padding: 40px 24px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="nav-logo">WhatAgent</a>
+</nav>
+
+<div class="page-content">
+  <h1>Privacy Policy</h1>
+  <p class="updated">Last updated: March 2026</p>
+
+  <h2>1. Introduction</h2>
+  <p>WhatAgent ("we", "us", or "our") operates the WhatAgent service. This page informs you of our policies regarding the collection, use, and disclosure of personal data when you use our service.</p>
+
+  <h2>2. Information We Collect</h2>
+  <p>We collect the following types of information:</p>
+  <ul>
+    <li><strong>Phone numbers</strong> — to enable WhatsApp messaging.</li>
+    <li><strong>Usage data</strong> — including API request logs, timestamps, and message counts.</li>
+    <li><strong>Account information</strong> — email address and authentication credentials if you create an account.</li>
+    <li><strong>Analytics</strong> — anonymized usage analytics via PostHog to improve the service.</li>
+  </ul>
+
+  <h2>3. How We Use Your Information</h2>
+  <ul>
+    <li>To provide and maintain the WhatAgent service.</li>
+    <li>To detect and prevent abuse or fraudulent use.</li>
+    <li>To improve the service through aggregated analytics.</li>
+    <li>To communicate service updates or policy changes.</li>
+  </ul>
+
+  <h2>4. Data Retention</h2>
+  <p>We retain message metadata for up to 90 days. Message content is not stored by WhatAgent — messages are relayed through WhatsApp's infrastructure.</p>
+
+  <h2>5. Third-Party Services</h2>
+  <p>We integrate with WhatsApp Business API (Meta) and PostHog analytics. These services have their own privacy policies which govern their use of data.</p>
+
+  <h2>6. Your Rights</h2>
+  <p>You may request deletion of your data at any time by contacting us at <a href="mailto:hello@whatagent.io">hello@whatagent.io</a>.</p>
+
+  <h2>7. Contact</h2>
+  <p>Questions about this policy? Email us at <a href="mailto:hello@whatagent.io">hello@whatagent.io</a>.</p>
+</div>
+
+<footer>© 2026 WhatAgent · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></footer>
+</body>
+</html>

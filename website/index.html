@@ -11,6 +11,9 @@
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="WhatAgent — WhatsApp API for Developers and AI Agents" />
 <meta name="twitter:description" content="One npx command. Send WhatsApp from Claude Code, Cursor, Windsurf in 60 seconds." />
+<meta property="og:image" content="https://whatagent.dev/og-image.png" />
+<meta name="twitter:image" content="https://whatagent.dev/og-image.png" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
 
 <script>
   !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]);t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(a!==void 0?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return a!=="posthog"&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+" (stub)"},o="capture identify alias people.set people.set_once set_config register register_once unregister opt_out_capturing has_opted_out_capturing opt_in_capturing reset isFeatureEnabled onFeatureFlags getFeatureFlag getFeatureFlagPayload reloadFeatureFlags group updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures getActiveMatchingSurveys getSurveys getNextSurveyStep".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
@@ -59,7 +62,7 @@ body {
   line-height: 1.65;
   min-height: 100vh;
   overflow-x: hidden;
-  cursor: none;
+  cursor: auto;
 }
 
 /* Custom cursor */
@@ -121,7 +124,7 @@ nav {
   display:inline-flex;align-items:center;gap:8px;
   padding:9px 20px;border-radius:var(--radius2);
   font-family:var(--font-mono);font-size:13px;font-weight:500;
-  text-decoration:none;transition:all .2s;cursor:none;border:none;
+  text-decoration:none;transition:all .2s;cursor:pointer;border:none;
 }
 .btn-ghost {
   color:var(--text2);background:transparent;
@@ -426,7 +429,7 @@ td:first-child { color:var(--text);font-weight:500; }
   margin-top:24px;width:100%;text-align:center;
   padding:10px;border-radius:var(--radius2);
   font-family:var(--font-mono);font-size:13px;font-weight:500;
-  text-decoration:none;display:block;cursor:none;
+  text-decoration:none;display:block;cursor:pointer;
   border:1px solid var(--border2);color:var(--text2);
   transition:all .2s;
 }
@@ -541,6 +544,36 @@ footer {
 }
 .reveal.visible { opacity:1;transform:translateY(0); }
 
+/* ─── HAMBURGER ─── */
+.nav-hamburger {
+  display:none;
+  flex-direction:column;justify-content:center;align-items:center;
+  width:36px;height:36px;gap:5px;
+  background:transparent;border:none;cursor:pointer;padding:4px;
+}
+.nav-hamburger span {
+  display:block;width:20px;height:2px;
+  background:var(--text2);border-radius:2px;
+  transition:transform .2s,opacity .2s;
+}
+.nav-hamburger.open span:nth-child(1) { transform:translateY(7px) rotate(45deg); }
+.nav-hamburger.open span:nth-child(2) { opacity:0; }
+.nav-hamburger.open span:nth-child(3) { transform:translateY(-7px) rotate(-45deg); }
+.nav-mobile {
+  display:none;
+  position:fixed;top:64px;left:0;right:0;z-index:99;
+  background:rgba(8,14,10,.97);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  padding:16px 24px;flex-direction:column;gap:4px;
+}
+.nav-mobile.open { display:flex; }
+.nav-mobile a {
+  color:var(--text2);font-size:15px;font-weight:400;
+  text-decoration:none;padding:10px 12px;border-radius:var(--radius2);
+  transition:color .15s,background .15s;
+}
+.nav-mobile a:hover { color:var(--text);background:rgba(255,255,255,.04); }
+
 /* ─── RESPONSIVE ─── */
 @media (max-width: 900px) {
   .steps { grid-template-columns:1fr; }
@@ -550,6 +583,7 @@ footer {
   .pricing-grid { grid-template-columns:repeat(2,1fr); }
   .integrations-grid { grid-template-columns:repeat(2,1fr); }
   .nav-links { display:none; }
+  .nav-hamburger { display:flex; }
 }
 @media (max-width: 600px) {
   .pricing-grid { grid-template-columns:1fr; }
@@ -565,11 +599,12 @@ footer {
 
 <div class="cursor" id="cursor"></div>
 <div class="cursor-ring" id="cursorRing"></div>
+<script>document.body.style.cursor = 'none';</script>
 
 <!-- NAV -->
 <nav>
   <a href="/" class="nav-logo">
-    <span class="logo-icon">💬</span>
+    <span class="logo-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
     WhatAgent
   </a>
   <ul class="nav-links">
@@ -581,8 +616,17 @@ footer {
   <div class="nav-cta">
     <a href="https://github.com/rushdmowjee/whatagent" class="btn btn-ghost">GitHub</a>
     <a href="/setup-wizard" class="btn btn-primary">Get started free</a>
+    <button class="nav-hamburger" id="navHamburger" aria-label="Open menu">
+      <span></span><span></span><span></span>
+    </button>
   </div>
 </nav>
+<div class="nav-mobile" id="navMobile">
+  <a href="#how-it-works" onclick="closeMobileNav()">How it works</a>
+  <a href="#pricing" onclick="closeMobileNav()">Pricing</a>
+  <a href="#integrations" onclick="closeMobileNav()">Integrations</a>
+  <a href="https://github.com/rushdmowjee/whatagent" onclick="closeMobileNav()">Docs</a>
+</div>
 
 <!-- HERO -->
 <section class="hero">
@@ -685,25 +729,25 @@ footer {
   <div class="cards">
     <div class="card">
       <div class="card-corner"></div>
-      <div class="card-icon">🤖</div>
+      <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg></div>
       <div class="card-title">AI Agents</div>
       <p class="card-desc">Give your AI agent a voice. Let it notify users, request approvals, or send alerts via WhatsApp — the channel they actually check. Works natively with Claude Code, Cursor, and Windsurf via MCP.</p>
     </div>
     <div class="card">
       <div class="card-corner"></div>
-      <div class="card-icon">🔔</div>
+      <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
       <div class="card-title">Notifications & Alerts</div>
       <p class="card-desc">Order confirmations, shipping updates, OTP codes, system alerts. Skip email. Go where your users are. WhatAgent handles delivery, status tracking, and retries automatically.</p>
     </div>
     <div class="card">
       <div class="card-corner"></div>
-      <div class="card-icon">⚡</div>
+      <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
       <div class="card-title">Side Projects</div>
       <p class="card-desc">You're building something fast. You don't have time for Meta Business Manager approvals and Twilio trials. WhatAgent just works — free tier, no credit card, no wait.</p>
     </div>
     <div class="card">
       <div class="card-corner"></div>
-      <div class="card-icon">🎨</div>
+      <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 0 0 0 20c1.1 0 2-.9 2-2v-.5c0-.5.4-1 1-1h.5a2 2 0 0 0 0-4H14c-.6 0-1-.4-1-1v-1.5c0-1.1.9-2 2-2 .8 0 1.5-.3 2-.8A10 10 0 0 0 12 2z"/><circle cx="8.5" cy="10.5" r="1"/><circle cx="12" cy="7" r="1"/><circle cx="7" cy="14" r="1"/></svg></div>
       <div class="card-title">Vibe Coded Apps</div>
       <p class="card-desc">Built with Lovable, Bolt, or Replit? Add WhatsApp messaging in 60 seconds without leaving your AI coding tool. WhatAgent is listed on every major MCP marketplace.</p>
     </div>
@@ -844,42 +888,42 @@ footer {
 
   <div class="integrations-grid">
     <div class="integration-item">
-      <div class="integration-logo">🤖</div>
+      <div class="integration-logo"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#D97706"/><text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="14" font-weight="700" fill="#fff">CC</text></svg></div>
       <div class="integration-name">Claude Code</div>
       <div class="integration-status">Native MCP</div>
     </div>
     <div class="integration-item">
-      <div class="integration-logo">⚡</div>
+      <div class="integration-logo"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#146EF5"/><text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="16" font-weight="700" fill="#fff">Cs</text></svg></div>
       <div class="integration-name">Cursor</div>
       <div class="integration-status">Native MCP</div>
     </div>
     <div class="integration-item">
-      <div class="integration-logo">🌊</div>
+      <div class="integration-logo"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#1E6FFF"/><text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="14" font-weight="700" fill="#fff">WS</text></svg></div>
       <div class="integration-name">Windsurf</div>
       <div class="integration-status">Native MCP</div>
     </div>
     <div class="integration-item">
-      <div class="integration-logo">🔧</div>
+      <div class="integration-logo"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#2D2D2D"/><text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="14" font-weight="700" fill="#fff">Cl</text></svg></div>
       <div class="integration-name">Cline</div>
       <div class="integration-status">Native MCP</div>
     </div>
     <div class="integration-item">
-      <div class="integration-logo">🦾</div>
+      <div class="integration-logo"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#7C3AED"/><text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="14" font-weight="700" fill="#fff">Dv</text></svg></div>
       <div class="integration-name">Devin</div>
       <div class="integration-status">Native MCP</div>
     </div>
     <div class="integration-item">
-      <div class="integration-logo">🔁</div>
+      <div class="integration-logo"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#F26207"/><text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="14" font-weight="700" fill="#fff">Re</text></svg></div>
       <div class="integration-name">Replit</div>
       <div class="integration-status">Native MCP</div>
     </div>
     <div class="integration-item">
-      <div class="integration-logo">💜</div>
+      <div class="integration-logo"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#E11D48"/><text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="14" font-weight="700" fill="#fff">Lv</text></svg></div>
       <div class="integration-name">Lovable</div>
       <div class="integration-status">REST API</div>
     </div>
     <div class="integration-item">
-      <div class="integration-logo">⚡</div>
+      <div class="integration-logo"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#1A1A1A"/><text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="14" font-weight="700" fill="#fff">Bl</text></svg></div>
       <div class="integration-name">Bolt.new</div>
       <div class="integration-status">REST API</div>
     </div>
@@ -923,7 +967,7 @@ footer {
   <div class="footer-inner">
     <a href="/" class="footer-logo">WhatAgent</a>
     <ul class="footer-links">
-      <li><a href="/docs">Docs</a></li>
+      <li><a href="https://github.com/rushdmowjee/whatagent">Docs</a></li>
       <li><a href="https://github.com/rushdmowjee/whatagent">GitHub</a></li>
       <li><a href="https://twitter.com/whatagent">Twitter</a></li>
       <li><a href="#pricing">Pricing</a></li>
@@ -982,15 +1026,40 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
 // ─── Copy command ───
 function copyCmd(el) {
-  navigator.clipboard.writeText('npx @whatagent/mcp').then(() => {
-    const icon = el.querySelector('.copy-icon');
+  const text = 'npx @whatagent/mcp';
+  const icon = el.querySelector('.copy-icon');
+  function onSuccess() {
     icon.textContent = '✓ copied';
     icon.style.color = 'var(--green)';
-    setTimeout(() => {
-      icon.textContent = '⎘ copy';
-      icon.style.color = '';
-    }, 2000);
-  });
+    setTimeout(() => { icon.textContent = '⎘ copy'; icon.style.color = ''; }, 2000);
+  }
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(onSuccess).catch(() => fallbackCopy(text, onSuccess));
+  } else {
+    fallbackCopy(text, onSuccess);
+  }
+}
+function fallbackCopy(text, onSuccess) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try { if (document.execCommand('copy')) onSuccess(); } catch(e) {}
+  document.body.removeChild(ta);
+}
+
+// ─── Mobile nav ───
+const hamburger = document.getElementById('navHamburger');
+const mobileNav = document.getElementById('navMobile');
+hamburger.addEventListener('click', () => {
+  hamburger.classList.toggle('open');
+  mobileNav.classList.toggle('open');
+});
+function closeMobileNav() {
+  hamburger.classList.remove('open');
+  mobileNav.classList.remove('open');
 }
 
 // ─── PostHog events ───
