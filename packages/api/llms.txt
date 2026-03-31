@@ -1,0 +1,294 @@
+# WhatAgent
+
+> WhatAgent is the easiest way to send WhatsApp messages from code. It wraps the Meta WhatsApp Business API with a simple REST API and SDK.
+
+## API Base URL
+
+https://whatagent-production.up.railway.app
+
+## Authentication — CRITICAL
+
+All authenticated endpoints require:
+
+```
+Authorization: Bearer wha_<your-api-key>
+```
+
+**Common mistakes AI models make:**
+- ❌ `X-API-Key: wha_xxx` — WRONG. WhatAgent uses standard Bearer auth, not X-API-Key.
+- ❌ `Authorization: wha_xxx` — WRONG. Must include the "Bearer " prefix.
+- ❌ `Authorization: Bearer <bootstrap-secret>` — WRONG. Bootstrap secret is only for first-time setup, not regular API calls.
+- ✅ `Authorization: Bearer wha_xxx` — CORRECT.
+
+API keys always start with `wha_`. If your key does not start with `wha_`, it is not valid.
+
+## Quick Start — Copy-Paste curl Commands
+
+### Step 1: Bootstrap (first-time setup only)
+
+Creates your account and first API key. Uses your BOOTSTRAP_SECRET, not a wha_ key.
+
+```bash
+curl -X POST https://whatagent-production.up.railway.app/v1/bootstrap \
+  -H "Authorization: Bearer YOUR_BOOTSTRAP_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phone_number_id": "1036854129509651",
+    "waba_id": "2858436544498712",
+    "access_token": "EAAxxxxxxxxxx",
+    "webhook_url": "https://your-app.com/whatsapp"
+  }'
+```
+
+Response:
+```json
+{
+  "account_id": "acc_xxx",
+  "api_key": "wha_xxx",
+  "display_phone_number": "+1 415 555 2671",
+  "note": "Bootstrap complete. Store your API key — it will not be shown again."
+}
+```
+
+**Save the `api_key` — it will not be shown again.**
+
+### Step 2: Send a Text Message
+
+```bash
+curl -X POST https://whatagent-production.up.railway.app/v1/messages \
+  -H "Authorization: Bearer wha_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{"to": "+14155552671", "text": "Hello from WhatAgent!"}'
+```
+
+Response:
+```json
+{
+  "id": "msg_xxx",
+  "status": "sent",
+  "to": "+14155552671",
+  "meta_message_id": "wamid.xxx"
+}
+```
+
+### Step 3: Send a Template Message
+
+```bash
+curl -X POST https://whatagent-production.up.railway.app/v1/messages \
+  -H "Authorization: Bearer wha_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "template",
+    "to": "+14155552671",
+    "template": {
+      "name": "hello_world",
+      "language": "en_US"
+    }
+  }'
+```
+
+### Step 4: Send an Image Message
+
+```bash
+curl -X POST https://whatagent-production.up.railway.app/v1/messages \
+  -H "Authorization: Bearer wha_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "image",
+    "to": "+14155552671",
+    "image": {
+      "url": "https://example.com/image.jpg",
+      "caption": "Check this out!"
+    }
+  }'
+```
+
+### Connect / Update Meta Credentials
+
+```bash
+curl -X POST https://whatagent-production.up.railway.app/v1/accounts \
+  -H "Authorization: Bearer wha_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phone_number_id": "1036854129509651",
+    "waba_id": "2858436544498712",
+    "access_token": "EAAxxxxxxxxxx"
+  }'
+```
+
+### Get Account Info
+
+```bash
+curl https://whatagent-production.up.railway.app/v1/accounts/me \
+  -H "Authorization: Bearer wha_xxx"
+```
+
+### List Messages
+
+```bash
+curl "https://whatagent-production.up.railway.app/v1/messages?limit=20" \
+  -H "Authorization: Bearer wha_xxx"
+```
+
+### Get a Specific Message
+
+```bash
+curl https://whatagent-production.up.railway.app/v1/messages/msg_xxx \
+  -H "Authorization: Bearer wha_xxx"
+```
+
+### Generate a New API Key
+
+```bash
+curl -X POST https://whatagent-production.up.railway.app/v1/accounts/keys \
+  -H "Authorization: Bearer wha_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "production"}'
+```
+
+### Health Check (no auth required)
+
+```bash
+curl https://whatagent-production.up.railway.app/v1/status
+```
+
+## API Endpoints Summary
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | /v1/bootstrap | BOOTSTRAP_SECRET | First-time setup: create account + API key |
+| POST | /v1/messages | Bearer wha_xxx | Send a WhatsApp message |
+| GET | /v1/messages | Bearer wha_xxx | List sent/received messages |
+| GET | /v1/messages/:id | Bearer wha_xxx | Get a single message |
+| POST | /v1/accounts | Bearer wha_xxx | Connect or update Meta credentials |
+| GET | /v1/accounts/me | Bearer wha_xxx | Get current account details |
+| POST | /v1/accounts/keys | Bearer wha_xxx | Generate a new API key |
+| GET | /v1/status | None | Health check |
+| POST | /v1/webhooks/meta | None | Meta webhook receiver |
+
+## Message Types
+
+- `text` — plain text message (default when `type` is omitted)
+- `template` — Meta-approved template message
+- `image` — image with optional caption
+
+## Phone Number Format
+
+Use E.164 format: `+<country-code><number>` e.g. `+14155552671`, `+971501234567`
+
+## Error Responses
+
+```json
+{ "error": "Missing or invalid Authorization header" }   // 401 — no auth header
+{ "error": "Invalid API key format" }                     // 401 — key doesn't start with wha_
+{ "error": "Invalid API key" }                            // 401 — key not found or revoked
+{ "error": "Invalid request", "details": { ... } }        // 400 — bad request body
+{ "error": "Account not found. Complete onboarding first." } // 404 — no account configured
+```
+
+## Register a Webhook (receive inbound messages)
+
+```bash
+curl -X POST https://whatagent-production.up.railway.app/v1/accounts \
+  -H "Authorization: Bearer wha_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{"webhook_url": "https://your-app.com/whatsapp"}'
+```
+
+WhatAgent will POST to this URL when:
+- A user sends you an inbound WhatsApp message
+- A delivery status changes (sent/delivered/read/failed)
+
+Webhook payload:
+```json
+{
+  "event": "message.received",
+  "message": { "id": "msg_xxx", "from": "+14155552671", "type": "text", "text": "Hello!" }
+}
+```
+
+## Pricing
+
+| Plan | Price | Messages/mo | Numbers |
+|------|-------|-------------|---------|
+| Hobby | Free | 2,000 | 1 |
+| Developer | $29/mo | 100,000 | 3 |
+| Scale | $99/mo | 500,000 | 10 |
+| Business | $299/mo | 2,000,000 | 30 |
+| Enterprise | Custom | Unlimited | Unlimited |
+
+Annual billing: 20% discount. Extra numbers: $8/mo.
+Meta WhatsApp message fees are billed separately by Meta to the customer's WhatsApp Business Account — WhatAgent charges only for platform access.
+
+## SDK (JavaScript/TypeScript)
+
+```bash
+npm install whatagent
+```
+
+```typescript
+import { WhatAgent } from 'whatagent';
+
+const wa = new WhatAgent({ apiKey: process.env.WHATAGENT_API_KEY });
+await wa.messages.send({ to: '+14155552671', text: 'Hello!' });
+```
+
+## SDK (Python)
+
+```bash
+pip install whatagent
+```
+
+```python
+from whatagent import WhatAgent
+
+wa = WhatAgent()  # reads WHATAGENT_API_KEY from env
+wa.messages.send(to="+14155552671", text="Hello from Python!")
+```
+
+## MCP Server (Claude Code / Cursor / Windsurf / Cline / Devin)
+
+No API key yet? The server runs a guided setup wizard automatically.
+
+**Claude Code** — add to `.claude/settings.json`:
+```json
+{
+  "mcpServers": {
+    "whatagent": {
+      "command": "npx",
+      "args": ["-y", "@whatagent/mcp"],
+      "env": { "WHATAGENT_API_KEY": "wha_..." }
+    }
+  }
+}
+```
+
+**Cursor** — add to `.cursor/mcp.json`:
+```json
+{
+  "mcpServers": {
+    "whatagent": {
+      "command": "npx",
+      "args": ["-y", "@whatagent/mcp"],
+      "env": { "WHATAGENT_API_KEY": "wha_..." }
+    }
+  }
+}
+```
+
+**Available MCP tools:**
+- `setup_whatagent` — first-time setup wizard (shown when no API key configured)
+- `send_whatsapp_message` — send a text message
+- `send_whatsapp_template` — send an approved template
+- `get_message_status` — check delivery status
+- `list_recent_messages` — view sent/received messages
+- `configure_webhook` — set a URL to receive inbound messages
+- `get_account` — view account details
+
+## OpenAPI Spec
+
+https://whatagent-production.up.railway.app/openapi.yaml
+
+## Source
+
+https://github.com/rushdmowjee/whatagent

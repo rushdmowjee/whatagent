@@ -19,6 +19,10 @@ RUN npm ci --omit=dev
 
 COPY --from=builder /app/dist ./dist
 
+# AI-friendly docs (copies from package-local copies of root docs)
+COPY llms.txt ./
+COPY openapi.yaml ./
+
 EXPOSE 3000
 
 CMD ["node", "dist/index.js"]

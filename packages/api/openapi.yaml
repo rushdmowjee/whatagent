@@ -1,0 +1,603 @@
+openapi: 3.1.0
+info:
+  title: WhatAgent API
+  description: |
+    The easiest way to send WhatsApp messages from code.
+
+    ## Authentication
+
+    All endpoints (except `/v1/status`, `/v1/webhooks/meta`, and `/v1/bootstrap`) require:
+
+    ```
+    Authorization: Bearer wha_<your-api-key>
+    ```
+
+    **Critical:** Use `Authorization: Bearer`, NOT `X-API-Key`. API keys always start with `wha_`.
+
+    ## Quick Start
+
+    1. **Bootstrap** — `POST /v1/bootstrap` with your BOOTSTRAP_SECRET to get a `wha_` API key
+    2. **Send** — `POST /v1/messages` with `Authorization: Bearer wha_xxx`
+
+  version: 1.0.0
+  contact:
+    url: https://github.com/rushdmowjee/whatagent
+
+servers:
+  - url: https://whatagent-production.up.railway.app
+    description: Production
+
+paths:
+  /v1/status:
+    get:
+      summary: Health check
+      operationId: getStatus
+      tags: [System]
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /v1/bootstrap:
+    post:
+      summary: First-time setup — create account and API key
+      description: |
+        Creates a new account and first API key in one step.
+        Uses your `BOOTSTRAP_SECRET` environment variable, NOT a `wha_` key.
+        Run this once per deployment.
+      operationId: bootstrap
+      tags: [Setup]
+      security:
+        - bootstrapSecret: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BootstrapRequest'
+            example:
+              phone_number_id: "1036854129509651"
+              waba_id: "2858436544498712"
+              access_token: "EAAxxxxxxxxxx"
+              webhook_url: "https://your-app.com/whatsapp"
+      responses:
+        '201':
+          description: Bootstrap successful — store the api_key, it will not be shown again
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BootstrapResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/MetaValidationError'
+
+  /v1/messages:
+    post:
+      summary: Send a WhatsApp message
+      description: |
+        Send a text, template, or image message via WhatsApp.
+        The `type` field defaults to `text` if omitted.
+      operationId: sendMessage
+      tags: [Messages]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendMessageRequest'
+            examples:
+              text:
+                summary: Send a text message
+                value:
+                  to: "+14155552671"
+                  text: "Hello from WhatAgent!"
+              template:
+                summary: Send a template message
+                value:
+                  type: template
+                  to: "+14155552671"
+                  template:
+                    name: hello_world
+                    language: en_US
+              image:
+                summary: Send an image message
+                value:
+                  type: image
+                  to: "+14155552671"
+                  image:
+                    url: "https://example.com/image.jpg"
+                    caption: "Check this out!"
+      responses:
+        '201':
+          description: Message sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendMessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Account not configured — run bootstrap first
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '502':
+          description: Meta API error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendMessageResponse'
+
+    get:
+      summary: List messages
+      operationId: listMessages
+      tags: [Messages]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Number of messages to return
+        - name: after
+          in: query
+          schema:
+            type: string
+          description: Cursor — return messages before this message ID (pagination)
+      responses:
+        '200':
+          description: List of messages
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messages:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Message'
+                  count:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/messages/{id}:
+    get:
+      summary: Get a single message
+      operationId: getMessage
+      tags: [Messages]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Message ID (e.g. msg_xxx)
+      responses:
+        '200':
+          description: Message details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Message not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/accounts:
+    post:
+      summary: Connect or update Meta credentials
+      description: |
+        Links your Meta WhatsApp Business credentials to your account.
+        Call this after bootstrap to connect (or later to rotate) your Meta access token.
+      operationId: updateAccount
+      tags: [Accounts]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountRequest'
+            example:
+              phone_number_id: "1036854129509651"
+              waba_id: "2858436544498712"
+              access_token: "EAAxxxxxxxxxx"
+      responses:
+        '200':
+          description: Account updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/MetaValidationError'
+
+  /v1/accounts/me:
+    get:
+      summary: Get current account
+      operationId: getAccount
+      tags: [Accounts]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Account details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Account not configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/accounts/keys:
+    post:
+      summary: Generate a new API key
+      description: Generates and returns a new `wha_` API key for this account.
+      operationId: createApiKey
+      tags: [Accounts]
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  default: default
+                  description: Label for this key
+            example:
+              name: production
+      responses:
+        '201':
+          description: New API key — store it, will not be shown again
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  key:
+                    type: string
+                    example: wha_xxx
+                  name:
+                    type: string
+                  note:
+                    type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/webhooks/meta:
+    post:
+      summary: Meta webhook receiver
+      description: Receives incoming message events from Meta. Configure this URL in your Meta App Dashboard.
+      operationId: metaWebhook
+      tags: [Webhooks]
+      security: []
+      responses:
+        '200':
+          description: Webhook received
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: |
+        API key in `Authorization: Bearer wha_xxx` format.
+        Keys always start with `wha_`.
+        DO NOT use `X-API-Key` — WhatAgent uses standard HTTP Bearer auth.
+    bootstrapSecret:
+      type: http
+      scheme: bearer
+      description: |
+        BOOTSTRAP_SECRET environment variable — used only for first-time setup.
+        NOT the same as a wha_ API key.
+
+  schemas:
+    BootstrapRequest:
+      type: object
+      required: [phone_number_id, waba_id, access_token]
+      properties:
+        phone_number_id:
+          type: string
+          description: Meta Phone Number ID (numeric string from Meta Developer Console → WhatsApp → API Setup)
+          example: "1036854129509651"
+        waba_id:
+          type: string
+          description: WhatsApp Business Account ID
+          example: "2858436544498712"
+        access_token:
+          type: string
+          description: Meta System User access token (permanent token recommended)
+          example: "EAAxxxxxxxxxx"
+        webhook_url:
+          type: string
+          format: uri
+          description: Your app's URL to receive incoming message webhooks
+          example: "https://your-app.com/whatsapp"
+        key_name:
+          type: string
+          default: default
+          description: Label for the generated API key
+
+    BootstrapResponse:
+      type: object
+      properties:
+        account_id:
+          type: string
+        api_key:
+          type: string
+          example: wha_xxx
+          description: Store this — it will not be shown again
+        display_phone_number:
+          type: string
+          example: "+1 415 555 2671"
+        note:
+          type: string
+
+    SendMessageRequest:
+      oneOf:
+        - $ref: '#/components/schemas/SendTextRequest'
+        - $ref: '#/components/schemas/SendTemplateRequest'
+        - $ref: '#/components/schemas/SendImageRequest'
+      discriminator:
+        propertyName: type
+        mapping:
+          text: '#/components/schemas/SendTextRequest'
+          template: '#/components/schemas/SendTemplateRequest'
+          image: '#/components/schemas/SendImageRequest'
+
+    SendTextRequest:
+      type: object
+      required: [to, text]
+      properties:
+        type:
+          type: string
+          enum: [text]
+          default: text
+        to:
+          type: string
+          description: Recipient phone in E.164 format
+          example: "+14155552671"
+        text:
+          type: string
+          maxLength: 4096
+          example: "Hello from WhatAgent!"
+        preview_url:
+          type: boolean
+          description: Enable link preview in message
+
+    SendTemplateRequest:
+      type: object
+      required: [type, to, template]
+      properties:
+        type:
+          type: string
+          enum: [template]
+        to:
+          type: string
+          example: "+14155552671"
+        template:
+          type: object
+          required: [name]
+          properties:
+            name:
+              type: string
+              example: hello_world
+            language:
+              type: string
+              default: en_US
+              example: en_US
+            components:
+              type: array
+              items: {}
+
+    SendImageRequest:
+      type: object
+      required: [type, to, image]
+      properties:
+        type:
+          type: string
+          enum: [image]
+        to:
+          type: string
+          example: "+14155552671"
+        image:
+          type: object
+          required: [url]
+          properties:
+            url:
+              type: string
+              format: uri
+              example: "https://example.com/image.jpg"
+            caption:
+              type: string
+
+    SendMessageResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: msg_xxx
+        status:
+          type: string
+          enum: [sent, failed]
+        to:
+          type: string
+        meta_message_id:
+          type: string
+        error:
+          type: string
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+        direction:
+          type: string
+          enum: [outbound, inbound]
+        to_number:
+          type: string
+        from_number:
+          type: string
+        type:
+          type: string
+          enum: [text, template, image]
+        body:
+          type: string
+        template_name:
+          type: string
+        meta_message_id:
+          type: string
+        status:
+          type: string
+          enum: [sent, delivered, read, failed]
+        error_message:
+          type: string
+        sent_at:
+          type: string
+          format: date-time
+        delivered_at:
+          type: string
+          format: date-time
+        read_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+
+    AccountRequest:
+      type: object
+      required: [phone_number_id, waba_id, access_token]
+      properties:
+        phone_number_id:
+          type: string
+          example: "1036854129509651"
+        waba_id:
+          type: string
+          example: "2858436544498712"
+        access_token:
+          type: string
+          example: "EAAxxxxxxxxxx"
+        webhook_url:
+          type: string
+          format: uri
+        webhook_verify_token:
+          type: string
+
+    AccountResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        phone_number_id:
+          type: string
+        waba_id:
+          type: string
+        display_phone_number:
+          type: string
+        webhook_url:
+          type: string
+        status:
+          type: string
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        detail:
+          type: string
+        details:
+          type: object
+
+  responses:
+    BadRequest:
+      description: Invalid request body
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: |
+        Missing or invalid API key.
+        Ensure you use `Authorization: Bearer wha_xxx` (not X-API-Key).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            missingHeader:
+              value:
+                error: "Missing or invalid Authorization header"
+            invalidFormat:
+              value:
+                error: "Invalid API key format"
+            invalidKey:
+              value:
+                error: "Invalid API key"
+    MetaValidationError:
+      description: Meta credential validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Meta credential validation failed"
+            detail: "Phone number ID not found or access token invalid"
+
+tags:
+  - name: Setup
+    description: First-time account setup
+  - name: Messages
+    description: Send and retrieve WhatsApp messages
+  - name: Accounts
+    description: Account and credential management
+  - name: Webhooks
+    description: Incoming message webhooks
+  - name: System
+    description: Health and status
