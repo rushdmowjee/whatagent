@@ -51,7 +51,7 @@ paths:
       summary: Register — get a wha_ API key instantly
       description: |
         Zero-touch account creation. Provide an email and app name to get a `wha_` API key
-        with 2,000 free messages (hobby plan). No Meta credentials required at this step.
+        with 500 free messages total (hobby plan). No Meta credentials required at this step.
 
         Idempotent: re-registering with the same email revokes the old key and issues a fresh one.
         Rate limited to 3 registrations per IP per hour.
@@ -91,7 +91,7 @@ paths:
                     example: acc_xxx
                   free_tier_remaining:
                     type: integer
-                    example: 2000
+                    example: 500
         '400':
           $ref: '#/components/responses/BadRequest'
         '429':

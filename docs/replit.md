@@ -108,11 +108,11 @@ If your Replit project uses an AI agent or MCP Connector, add WhatAgent:
 
 ## Get Your API Key
 
-Sign up at [whatagent.dev](https://whatagent.dev) — free tier includes 2,000 messages/month.
+Sign up at [whatagent.dev](https://whatagent.dev) — free tier includes 500 messages total.
 
-| Plan | Price | Messages/mo | Numbers |
-|------|-------|-------------|---------|
-| Hobby | Free | 2,000 | 1 |
+| Plan | Price | Messages | Numbers |
+|------|-------|----------|---------|
+| Hobby | Free | 500 total | 1 |
 | Developer | $29/mo | 100,000 | 3 |
 | Scale | $99/mo | 500,000 | 10 |
 | Business | $299/mo | 2,000,000 | 30 |

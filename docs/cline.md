@@ -83,10 +83,10 @@ await wa.messages.send({ to: '+14155552671', text: 'Hello from Cline!' });
 
 ## Get Your API Key
 
-Sign up at [whatagent.dev](https://whatagent.dev) — free tier includes 2,000 messages/month.
+Sign up at [whatagent.dev](https://whatagent.dev) — free tier includes 500 messages total.
 
-| Plan | Price | Messages/mo |
-|------|-------|-------------|
-| Hobby | Free | 2,000 |
+| Plan | Price | Messages |
+|------|-------|----------|
+| Hobby | Free | 500 total |
 | Developer | $29/mo | 100,000 |
 | Scale | $99/mo | 500,000 |
