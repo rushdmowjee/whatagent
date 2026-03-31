@@ -97,4 +97,14 @@ Then tell the AI: *"Send a WhatsApp to +14155552671 saying Hello!"*
 
 ## Get Your API Key
 
-Sign up at [whatagent.dev](https://whatagent.dev) — free tier includes 100 messages/month.
+Sign up at [whatagent.dev](https://whatagent.dev) — free tier includes 2,000 messages/month.
+
+| Plan | Price | Messages/mo | Numbers |
+|------|-------|-------------|---------|
+| Hobby | Free | 2,000 | 1 |
+| Developer | $29/mo | 100,000 | 3 |
+| Scale | $99/mo | 500,000 | 10 |
+| Business | $299/mo | 2,000,000 | 30 |
+| Enterprise | Custom | Unlimited | Unlimited |
+
+Annual billing saves 20%. Meta message fees are billed separately by Meta to your WhatsApp Business Account — WhatAgent charges only for platform access.
