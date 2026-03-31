@@ -76,6 +76,14 @@ async function runMigrations(pool: Pool): Promise<void> {
       CREATE INDEX IF NOT EXISTS idx_messages_account_id ON messages(account_id);
       CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_messages_meta_message_id ON messages(meta_message_id);
+
+      CREATE TABLE IF NOT EXISTS registrations (
+        id TEXT PRIMARY KEY,
+        email TEXT NOT NULL UNIQUE,
+        app_name TEXT NOT NULL,
+        account_id TEXT NOT NULL UNIQUE,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
     `);
 
     // Additive migrations for existing databases
