@@ -24,7 +24,7 @@ info:
     url: https://github.com/rushdmowjee/whatagent
 
 servers:
-  - url: https://whatagent-production.up.railway.app
+  - url: https://api.whatagent.dev
     description: Production
 
 paths:

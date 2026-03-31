@@ -4,7 +4,7 @@
 
 ## API Base URL
 
-https://whatagent-production.up.railway.app
+https://api.whatagent.dev
 
 ## Authentication — CRITICAL
 
@@ -29,7 +29,7 @@ API keys always start with `wha_`. If your key does not start with `wha_`, it is
 Creates your account and first API key. Uses your BOOTSTRAP_SECRET, not a wha_ key.
 
 ```bash
-curl -X POST https://whatagent-production.up.railway.app/v1/bootstrap \
+curl -X POST https://api.whatagent.dev/v1/bootstrap \
   -H "Authorization: Bearer YOUR_BOOTSTRAP_SECRET" \
   -H "Content-Type: application/json" \
   -d '{
@@ -55,7 +55,7 @@ Response:
 ### Step 2: Send a Text Message
 
 ```bash
-curl -X POST https://whatagent-production.up.railway.app/v1/messages \
+curl -X POST https://api.whatagent.dev/v1/messages \
   -H "Authorization: Bearer wha_xxx" \
   -H "Content-Type: application/json" \
   -d '{"to": "+14155552671", "text": "Hello from WhatAgent!"}'
@@ -74,7 +74,7 @@ Response:
 ### Step 3: Send a Template Message
 
 ```bash
-curl -X POST https://whatagent-production.up.railway.app/v1/messages \
+curl -X POST https://api.whatagent.dev/v1/messages \
   -H "Authorization: Bearer wha_xxx" \
   -H "Content-Type: application/json" \
   -d '{
@@ -90,7 +90,7 @@ curl -X POST https://whatagent-production.up.railway.app/v1/messages \
 ### Step 4: Send an Image Message
 
 ```bash
-curl -X POST https://whatagent-production.up.railway.app/v1/messages \
+curl -X POST https://api.whatagent.dev/v1/messages \
   -H "Authorization: Bearer wha_xxx" \
   -H "Content-Type: application/json" \
   -d '{
@@ -106,7 +106,7 @@ curl -X POST https://whatagent-production.up.railway.app/v1/messages \
 ### Connect / Update Meta Credentials
 
 ```bash
-curl -X POST https://whatagent-production.up.railway.app/v1/accounts \
+curl -X POST https://api.whatagent.dev/v1/accounts \
   -H "Authorization: Bearer wha_xxx" \
   -H "Content-Type: application/json" \
   -d '{
@@ -119,28 +119,28 @@ curl -X POST https://whatagent-production.up.railway.app/v1/accounts \
 ### Get Account Info
 
 ```bash
-curl https://whatagent-production.up.railway.app/v1/accounts/me \
+curl https://api.whatagent.dev/v1/accounts/me \
   -H "Authorization: Bearer wha_xxx"
 ```
 
 ### List Messages
 
 ```bash
-curl "https://whatagent-production.up.railway.app/v1/messages?limit=20" \
+curl "https://api.whatagent.dev/v1/messages?limit=20" \
   -H "Authorization: Bearer wha_xxx"
 ```
 
 ### Get a Specific Message
 
 ```bash
-curl https://whatagent-production.up.railway.app/v1/messages/msg_xxx \
+curl https://api.whatagent.dev/v1/messages/msg_xxx \
   -H "Authorization: Bearer wha_xxx"
 ```
 
 ### Generate a New API Key
 
 ```bash
-curl -X POST https://whatagent-production.up.railway.app/v1/accounts/keys \
+curl -X POST https://api.whatagent.dev/v1/accounts/keys \
   -H "Authorization: Bearer wha_xxx" \
   -H "Content-Type: application/json" \
   -d '{"name": "production"}'
@@ -149,7 +149,7 @@ curl -X POST https://whatagent-production.up.railway.app/v1/accounts/keys \
 ### Health Check (no auth required)
 
 ```bash
-curl https://whatagent-production.up.railway.app/v1/status
+curl https://api.whatagent.dev/v1/status
 ```
 
 ## API Endpoints Summary
@@ -189,7 +189,7 @@ Use E.164 format: `+<country-code><number>` e.g. `+14155552671`, `+971501234567`
 ## Register a Webhook (receive inbound messages)
 
 ```bash
-curl -X POST https://whatagent-production.up.railway.app/v1/accounts \
+curl -X POST https://api.whatagent.dev/v1/accounts \
   -H "Authorization: Bearer wha_xxx" \
   -H "Content-Type: application/json" \
   -d '{"webhook_url": "https://your-app.com/whatsapp"}'
@@ -287,7 +287,7 @@ No API key yet? The server runs a guided setup wizard automatically.
 
 ## OpenAPI Spec
 
-https://whatagent-production.up.railway.app/openapi.yaml
+https://api.whatagent.dev/openapi.yaml
 
 ## Source
 
