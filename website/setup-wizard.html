@@ -1110,7 +1110,7 @@
         <div style="margin:20px 0 8px">
           <div style="font-size:11px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Connect command — auto-filled with your values</div>
           <div class="code-block" id="connectCmd">
-<span class="kw">curl</span> -X POST https://whatagent-production.up.railway.app/v1/accounts \
+<span class="kw">curl</span> -X POST https://api.whatagent.dev/v1/accounts \
   -H <span class="str">'Authorization: Bearer <span class="val" id="cmdApiKey">wha_your_api_key</span>'</span> \
   -H <span class="str">'Content-Type: application/json'</span> \
   -d <span class="str">'{
@@ -1151,7 +1151,7 @@
           <div class="test-panel">
             <h4>Send your first message</h4>
             <div class="code-block" style="margin:0">
-<span class="kw">curl</span> -X POST https://whatagent-production.up.railway.app/v1/messages \
+<span class="kw">curl</span> -X POST https://api.whatagent.dev/v1/messages \
   -H <span class="str">'Authorization: Bearer <span class="val" id="successApiKey">wha_...</span>'</span> \
   -H <span class="str">'Content-Type: application/json'</span> \
   -d <span class="str">'{
