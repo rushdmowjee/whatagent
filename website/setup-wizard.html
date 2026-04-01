@@ -1372,7 +1372,9 @@
             document.getElementById('successApiKey').textContent = data.api_key;
             showSuccess();
           } else {
-            showEmbeddedStatus('error', '✗ ' + (data.error || 'Connection failed. Please try again.'));
+            var errMsg = data.error || 'Connection failed. Please try again.';
+            if (data.detail) errMsg += ' (' + data.detail + ')';
+            showEmbeddedStatus('error', '✗ ' + errMsg);
           }
         })
         .catch(function() {
