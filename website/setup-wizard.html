@@ -1267,11 +1267,47 @@
     });
   }
 
-  async function startEmbeddedSignup() {
+  // Pre-loaded embedded signup config and SDK state.
+  // Populated eagerly on page load so FB.login can be called synchronously on click
+  // (async awaits before FB.login break the browser's user-gesture context and cause
+  // popup blockers to silently swallow the login window).
+  let embeddedSignupConfig = null;  // { app_id, scopes } from /v1/auth/meta/start
+  let fbSdkReady = false;           // true once window.FB is initialised
+
+  async function preloadEmbeddedSignup() {
+    try {
+      const r = await fetch(API_BASE + '/v1/auth/meta/start');
+      if (!r.ok) return; // not configured — button will fall through to manual flow on click
+      embeddedSignupConfig = await r.json();
+    } catch {
+      return; // network error — same fallback
+    }
+
+    try {
+      await loadFbSdk(embeddedSignupConfig.app_id);
+      fbSdkReady = true;
+    } catch {
+      // SDK failed to load; startEmbeddedSignup will surface the error on click
+    }
+  }
+
+  function startEmbeddedSignup() {
     const email = document.getElementById('metaEmail').value.trim();
     if (!email || !email.includes('@')) {
       document.getElementById('metaEmail').classList.add('error');
+      showEmbeddedStatus('error', '✗ Please enter a valid email address before connecting.');
       setTimeout(() => document.getElementById('metaEmail').classList.remove('error'), 2000);
+      return;
+    }
+
+    // SDK not yet ready — either not configured or still loading
+    if (!embeddedSignupConfig || !fbSdkReady) {
+      if (!embeddedSignupConfig) {
+        // Not configured on this server — fall back to manual flow
+        goManual();
+      } else {
+        showEmbeddedStatus('error', '✗ Meta SDK is still loading. Please wait a moment and try again.');
+      }
       return;
     }
 
@@ -1281,38 +1317,27 @@
     spinner.classList.add('visible');
     document.getElementById('embeddedStatus').style.display = 'none';
 
-    let config;
-    try {
-      const r = await fetch(API_BASE + '/v1/auth/meta/start');
-      if (!r.ok) throw new Error('not configured');
-      config = await r.json();
-    } catch {
-      // Embedded signup not configured — fall back to manual flow silently
-      btn.disabled = false;
-      spinner.classList.remove('visible');
-      goManual();
-      return;
-    }
-
-    try {
-      await loadFbSdk(config.app_id);
-    } catch {
-      btn.disabled = false;
-      spinner.classList.remove('visible');
-      showEmbeddedStatus('error', '✗ Could not load Meta SDK. Check your connection and try again.');
-      return;
-    }
-
-    spinner.classList.remove('visible');
+    // FB.login must be called synchronously here (direct user-gesture context) so
+    // browsers do not block the popup. The config and SDK were pre-loaded above.
+    let fbCallbackFired = false;
+    const popupTimeout = setTimeout(() => {
+      if (!fbCallbackFired) {
+        btn.disabled = false;
+        spinner.classList.remove('visible');
+        showEmbeddedStatus('error', '✗ Meta popup did not open. Check: (1) allow popups for whatagent.dev in your browser, (2) confirm whatagent.dev is added as an App Domain in Meta App Settings → Basic.');
+      }
+    }, 8000);
 
     FB.login(async (response) => {
+      clearTimeout(popupTimeout);
+      fbCallbackFired = true;
       if (!response.authResponse?.code) {
         btn.disabled = false;
+        spinner.classList.remove('visible');
         showEmbeddedStatus('error', '✗ Meta login was cancelled. Try again or use manual setup.');
         return;
       }
 
-      spinner.classList.add('visible');
       showEmbeddedStatus('loading', '⏳ Connecting your WhatsApp account...');
 
       try {
@@ -1340,7 +1365,7 @@
         showEmbeddedStatus('error', '✗ Could not reach WhatAgent API. Please try again.');
       }
     }, {
-      scope: config.scopes.join(','),
+      scope: embeddedSignupConfig.scopes.join(','),
       response_type: 'code',
       override_default_response_type: true,
     });
@@ -1629,6 +1654,7 @@
 
   // Init
   updateProgress(1);
+  preloadEmbeddedSignup();
 </script>
 </body>
 </html>
