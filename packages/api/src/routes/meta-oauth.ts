@@ -69,10 +69,11 @@ metaOauthRouter.post('/callback', callbackLimiter, async (req: Request, res: Res
   }
 
   const { email, app_name, code } = parsed.data;
-  const redirectUri = `${apiBase}/v1/auth/meta/callback`;
 
   try {
-    // Step 1: Exchange code → short-lived user access token
+    // Step 1: Exchange Embedded Signup code → business integration system user access token.
+    // Note: Embedded Signup code exchange does NOT use redirect_uri — the code is returned
+    // via the JS SDK callback, not a URL redirect. Including redirect_uri causes a mismatch error.
     const tokenResp = await axios.get<{ access_token: string }>(
       `${META_GRAPH_BASE}/oauth/access_token`,
       {
@@ -80,25 +81,11 @@ metaOauthRouter.post('/callback', callbackLimiter, async (req: Request, res: Res
           client_id: appId,
           client_secret: appSecret,
           code,
-          redirect_uri: redirectUri,
         },
       }
     );
-    const shortLivedToken = tokenResp.data.access_token;
-
-    // Step 2: Upgrade to long-lived user token (60 days)
-    const longTokenResp = await axios.get<{ access_token: string }>(
-      `${META_GRAPH_BASE}/oauth/access_token`,
-      {
-        params: {
-          grant_type: 'fb_exchange_token',
-          client_id: appId,
-          client_secret: appSecret,
-          fb_exchange_token: shortLivedToken,
-        },
-      }
-    );
-    const accessToken = longTokenResp.data.access_token;
+    // The Embedded Signup code exchange returns a business token (already long-lived, ~60 days).
+    const accessToken = tokenResp.data.access_token;
 
     // Step 3: Resolve WABA ID
     const bizResp = await axios.get<{
