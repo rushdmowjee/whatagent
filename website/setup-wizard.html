@@ -1328,6 +1328,19 @@
       }
     }, 8000);
 
+    const fbLoginOptions = embeddedSignupConfig.config_id
+      ? {
+          config_id: embeddedSignupConfig.config_id,
+          response_type: 'code',
+          override_default_response_type: true,
+          extras: { setup: {}, featureType: '', sessionInfoVersion: '2' },
+        }
+      : {
+          scope: embeddedSignupConfig.scopes.join(','),
+          response_type: 'code',
+          override_default_response_type: true,
+        };
+
     FB.login(async (response) => {
       clearTimeout(popupTimeout);
       fbCallbackFired = true;
@@ -1364,11 +1377,7 @@
         btn.disabled = false;
         showEmbeddedStatus('error', '✗ Could not reach WhatAgent API. Please try again.');
       }
-    }, {
-      scope: embeddedSignupConfig.scopes.join(','),
-      response_type: 'code',
-      override_default_response_type: true,
-    });
+    }, fbLoginOptions);
   }
 
   // ── Step 2 ─────────────────────────────────────────────

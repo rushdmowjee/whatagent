@@ -33,7 +33,8 @@ metaOauthRouter.get('/start', (req: Request, res: Response): void => {
     res.status(503).json({ error: 'Meta embedded signup is not configured on this server.' });
     return;
   }
-  res.json({ app_id: appId, scopes: EMBEDDED_SIGNUP_SCOPES });
+  const configId = process.env.META_EMBEDDED_SIGNUP_CONFIG_ID || null;
+  res.json({ app_id: appId, scopes: EMBEDDED_SIGNUP_SCOPES, config_id: configId });
 });
 
 /**
