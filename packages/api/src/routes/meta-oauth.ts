@@ -72,9 +72,10 @@ metaOauthRouter.post('/callback', callbackLimiter, async (req: Request, res: Res
 
   try {
     // Step 1: Exchange Embedded Signup code → business integration system user access token.
-    // For the Embedded Signup flow with config_id, the code is issued via the FB JS SDK popup
-    // (no traditional redirect_uri). Meta does NOT expect redirect_uri in the token exchange for
-    // this flow — including one causes "redirect_uri does not match" errors.
+    // FB.login() popup internally uses https://www.facebook.com/connect/login_success.html as
+    // the redirect_uri in the authorization request. Meta stores this with the issued code, so
+    // the token exchange MUST include the same redirect_uri for Meta to accept the code.
+    // This URI must also be registered in Meta App → Facebook Login for Business → Valid OAuth Redirect URIs.
     const tokenResp = await axios.get<{ access_token: string }>(
       `${META_GRAPH_BASE}/oauth/access_token`,
       {
@@ -82,6 +83,7 @@ metaOauthRouter.post('/callback', callbackLimiter, async (req: Request, res: Res
           client_id: appId,
           client_secret: appSecret,
           code,
+          redirect_uri: 'https://www.facebook.com/connect/login_success.html',
         },
       }
     );
