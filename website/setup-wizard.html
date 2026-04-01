@@ -1374,6 +1374,7 @@
           } else {
             var errMsg = data.error || 'Connection failed. Please try again.';
             if (data.detail) errMsg += ' (' + data.detail + ')';
+            if (data.meta_code) errMsg += ' [code:' + data.meta_code + (data.meta_subcode ? '/sub:' + data.meta_subcode : '') + ']';
             showEmbeddedStatus('error', '✗ ' + errMsg);
           }
         })

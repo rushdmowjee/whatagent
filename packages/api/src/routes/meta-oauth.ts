@@ -179,9 +179,16 @@ metaOauthRouter.post('/callback', callbackLimiter, async (req: Request, res: Res
     });
   } catch (err: unknown) {
     if (axios.isAxiosError(err)) {
-      const metaError = err.response?.data?.error?.message;
-      if (metaError) {
-        res.status(422).json({ error: 'Meta OAuth error', detail: metaError });
+      const metaErrObj = err.response?.data?.error;
+      if (metaErrObj) {
+        console.error('Meta OAuth error response:', JSON.stringify(metaErrObj));
+        res.status(422).json({
+          error: 'Meta OAuth error',
+          detail: metaErrObj.message,
+          meta_code: metaErrObj.code,
+          meta_subcode: metaErrObj.error_subcode,
+          meta_type: metaErrObj.type,
+        });
         return;
       }
     }
