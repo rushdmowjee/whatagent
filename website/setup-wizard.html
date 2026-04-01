@@ -1341,7 +1341,9 @@
           override_default_response_type: true,
         };
 
-    FB.login(async (response) => {
+    // FB.login callback must NOT be async — Meta SDK rejects async functions
+    // ("Expression is of type asyncfunction, not function"). Use .then() chaining instead.
+    FB.login((response) => {
       clearTimeout(popupTimeout);
       fbCallbackFired = true;
       if (!response.authResponse?.code) {
@@ -1353,30 +1355,31 @@
 
       showEmbeddedStatus('loading', '⏳ Connecting your WhatsApp account...');
 
-      try {
-        const res = await fetch(API_BASE + '/v1/auth/meta/callback', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, app_name: 'My App', code: response.authResponse.code }),
+      fetch(API_BASE + '/v1/auth/meta/callback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, app_name: 'My App', code: response.authResponse.code }),
+      })
+        .then(function(res) { return res.json().then(function(data) { return { res: res, data: data }; }); })
+        .then(function(result) {
+          spinner.classList.remove('visible');
+          btn.disabled = false;
+          var res = result.res, data = result.data;
+          if (res.ok && data.api_key) {
+            state.apiKey = data.api_key;
+            state.connectedNumber = data.display_phone_number || '';
+            document.getElementById('successNumber').textContent = data.display_phone_number || '';
+            document.getElementById('successApiKey').textContent = data.api_key;
+            showSuccess();
+          } else {
+            showEmbeddedStatus('error', '✗ ' + (data.error || 'Connection failed. Please try again.'));
+          }
+        })
+        .catch(function() {
+          spinner.classList.remove('visible');
+          btn.disabled = false;
+          showEmbeddedStatus('error', '✗ Could not reach WhatAgent API. Please try again.');
         });
-        const data = await res.json();
-        spinner.classList.remove('visible');
-        btn.disabled = false;
-
-        if (res.ok && data.api_key) {
-          state.apiKey = data.api_key;
-          state.connectedNumber = data.display_phone_number || '';
-          document.getElementById('successNumber').textContent = data.display_phone_number || '';
-          document.getElementById('successApiKey').textContent = data.api_key;
-          showSuccess();
-        } else {
-          showEmbeddedStatus('error', '✗ ' + (data.error || 'Connection failed. Please try again.'));
-        }
-      } catch {
-        spinner.classList.remove('visible');
-        btn.disabled = false;
-        showEmbeddedStatus('error', '✗ Could not reach WhatAgent API. Please try again.');
-      }
     }, fbLoginOptions);
   }
 
