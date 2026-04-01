@@ -1253,12 +1253,12 @@
   function loadFbSdk(appId) {
     return new Promise((resolve) => {
       if (window.FB) {
-        FB.init({ appId, cookie: true, xfbml: false, version: 'v19.0' });
+        FB.init({ appId, cookie: true, xfbml: false, version: 'v21.0' });
         resolve();
         return;
       }
       window.fbAsyncInit = function () {
-        FB.init({ appId, cookie: true, xfbml: false, version: 'v19.0' });
+        FB.init({ appId, cookie: true, xfbml: false, version: 'v21.0' });
         resolve();
       };
       const s = document.createElement('script');
@@ -1333,7 +1333,7 @@
           config_id: embeddedSignupConfig.config_id,
           response_type: 'code',
           override_default_response_type: true,
-          extras: { version: 'v3', features: [{ name: 'app_only_install' }] },
+          extras: { setup: {} },
         }
       : {
           scope: embeddedSignupConfig.scopes.join(','),
