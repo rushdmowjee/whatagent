@@ -72,8 +72,8 @@ metaOauthRouter.post('/callback', callbackLimiter, async (req: Request, res: Res
 
   try {
     // Step 1: Exchange Embedded Signup code → business integration system user access token.
-    // For the Embedded Signup flow, Meta returns the code via the JS SDK popup (not a redirect).
-    // The correct exchange omits redirect_uri entirely and uses the versioned Graph API endpoint.
+    // Meta requires the redirect_uri to match what is registered in the app's Valid OAuth Redirect URIs.
+    // This URL is registered there and must also be set in the Embedded Signup Configuration.
     const tokenResp = await axios.get<{ access_token: string }>(
       `${META_GRAPH_BASE}/v22.0/oauth/access_token`,
       {
@@ -81,6 +81,7 @@ metaOauthRouter.post('/callback', callbackLimiter, async (req: Request, res: Res
           client_id: appId,
           client_secret: appSecret,
           code,
+          redirect_uri: 'https://api.whatagent.dev/v1/auth/meta/callback',
         },
       }
     );
