@@ -4,9 +4,9 @@ The easiest way to send WhatsApp messages from code.
 
 ## Pricing
 
-| Plan | Price | Messages/mo | Numbers | Support |
-|------|-------|-------------|---------|---------|
-| **Hobby** | Free | 2,000 | 1 | Community |
+| Plan | Price | Messages | Numbers | Support |
+|------|-------|----------|---------|---------|
+| **Hobby** | Free | 500 total | 1 | Community |
 | **Developer** | $29/mo | 100,000 | 3 | Email (48hr) |
 | **Scale** | $99/mo | 500,000 | 10 | Priority email (24hr) |
 | **Business** | $299/mo | 2,000,000 | 30 | Priority + chat (12hr) |

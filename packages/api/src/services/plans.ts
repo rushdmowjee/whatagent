@@ -6,7 +6,7 @@ export interface PlanLimits {
 }
 
 export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
-  hobby:      { messagesPerMonth: 2_000,       numbers: 1 },
+  hobby:      { messagesPerMonth: 500,          numbers: 1 },
   developer:  { messagesPerMonth: 100_000,     numbers: 3 },
   scale:      { messagesPerMonth: 500_000,     numbers: 10 },
   business:   { messagesPerMonth: 2_000_000,   numbers: 30 },

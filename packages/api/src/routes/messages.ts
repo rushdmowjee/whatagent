@@ -57,12 +57,12 @@ messagesRouter.post('/', (async (req: Request, res: Response): Promise<void> => 
 
   const { phone_number_id: phoneNumberId, access_token_encrypted, plan, billing_cycle_start, messages_used: rawMessagesUsed } = account.rows[0];
 
-  // Reset monthly counter if billing cycle has rolled over
+  // Reset monthly counter if billing cycle has rolled over (not for hobby — 500 is a lifetime total)
   const cycleStart = new Date(billing_cycle_start);
   const now = new Date();
   const cycleExpired = now >= new Date(cycleStart.getFullYear(), cycleStart.getMonth() + 1, cycleStart.getDate());
   let messagesUsed: number = parseInt(rawMessagesUsed, 10);
-  if (cycleExpired) {
+  if (cycleExpired && plan !== 'hobby') {
     await db.query(
       `UPDATE accounts SET messages_used = 0, billing_cycle_start = NOW() WHERE id = $1`,
       [authed.accountId]
@@ -78,7 +78,9 @@ messagesRouter.post('/', (async (req: Request, res: Response): Promise<void> => 
       plan,
       messages_used: messagesUsed,
       messages_limit: limits.messagesPerMonth,
-      detail: `Your ${plan} plan allows ${limits.messagesPerMonth.toLocaleString()} messages per month. Upgrade at https://whatagent.dev/pricing.`,
+      detail: plan === 'hobby'
+        ? `Your hobby plan includes ${limits.messagesPerMonth.toLocaleString()} free messages in total. Upgrade at https://whatagent.dev/pricing.`
+        : `Your ${plan} plan allows ${limits.messagesPerMonth.toLocaleString()} messages per month. Upgrade at https://whatagent.dev/pricing.`,
     });
     return;
   }
