@@ -113,16 +113,18 @@ metaOauthRouter.post('/callback', callbackLimiter, async (req: Request, res: Res
     }
     console.log(`${logPrefix} step1 OK token_prefix=${accessToken.slice(0, 10)}...`);
 
-    // Step 3: Resolve WABA ID via debug_token granular_scopes.
+    // Step 3: Resolve WABA ID and phone number ID via debug_token granular_scopes.
     // The Embedded Signup token has whatsapp_business_management scope but NOT business_management,
     // so /me/businesses returns (#100) Missing Permission. The correct approach is to call
-    // debug_token: the granular_scopes entry for whatsapp_business_management lists the
-    // WABA ID(s) the token was granted access to.
-    console.log(`${logPrefix} step3: resolving WABA ID via debug_token`);
+    // debug_token: granular_scopes for whatsapp_business_management → WABA IDs,
+    // granular_scopes for whatsapp_business_messaging → phone number IDs directly.
+    console.log(`${logPrefix} step3: resolving IDs via debug_token`);
     const appToken = `${appId}|${appSecret}`;
     const debugResp = await axios.get<{
       data?: {
+        scopes?: string[];
         granular_scopes?: Array<{ scope: string; target_ids?: string[] }>;
+        user_id?: string;
       };
     }>(
       `${META_GRAPH_BASE}/debug_token`,
@@ -131,33 +133,59 @@ metaOauthRouter.post('/callback', callbackLimiter, async (req: Request, res: Res
       }
     );
     console.log(`${logPrefix} step3 debug_token response:`, JSON.stringify(debugResp.data));
-    const wabaScope = debugResp.data.data?.granular_scopes?.find(
-      (s) => s.scope === 'whatsapp_business_management'
-    );
+    const granularScopes = debugResp.data.data?.granular_scopes ?? [];
+    const wabaScope = granularScopes.find((s) => s.scope === 'whatsapp_business_management');
+    const messagingScope = granularScopes.find((s) => s.scope === 'whatsapp_business_messaging');
+    console.log(`${logPrefix} step3 waba_scope target_ids:`, JSON.stringify(wabaScope?.target_ids));
+    console.log(`${logPrefix} step3 messaging_scope target_ids:`, JSON.stringify(messagingScope?.target_ids));
+
     const wabaId = wabaScope?.target_ids?.[0];
-    if (!wabaId) {
-      console.error(`${logPrefix} step3 FAILED no WABA ID in debug_token granular_scopes`);
+    // Fast-path: if we have phone number IDs directly from messaging scope, use them
+    const directPhoneNumberId = messagingScope?.target_ids?.[0];
+
+    if (!wabaId && !directPhoneNumberId) {
+      console.error(`${logPrefix} step3 FAILED no WABA or phone IDs in granular_scopes. scopes=${JSON.stringify(debugResp.data.data?.scopes)}`);
       res.status(422).json({ error: 'No WhatsApp Business Account found. Complete WhatsApp Business setup and try again.' });
       return;
     }
-    console.log(`${logPrefix} step3 OK waba_id=${wabaId}`);
-
-    // Step 4: Resolve phone number ID
-    console.log(`${logPrefix} step4: resolving phone numbers for waba_id=${wabaId}`);
-    const phoneResp = await axios.get<{ data?: Array<{ id: string; display_phone_number: string }> }>(
-      `${META_GRAPH_BASE}/${META_API_VERSION}/${wabaId}/phone_numbers`,
-      {
-        params: { fields: 'id,display_phone_number', access_token: accessToken },
-      }
-    );
-    console.log(`${logPrefix} step4 response:`, JSON.stringify(phoneResp.data));
-    const phone = phoneResp.data.data?.[0];
-    if (!phone) {
-      console.error(`${logPrefix} step4 FAILED no phone numbers found`);
-      res.status(422).json({ error: 'No phone numbers found in your WhatsApp Business Account.' });
-      return;
+    if (wabaId) {
+      console.log(`${logPrefix} step3 OK waba_id=${wabaId}`);
+    } else {
+      console.log(`${logPrefix} step3 OK (no WABA, using direct phone_number_id=${directPhoneNumberId})`);
     }
-    const { id: phoneNumberId, display_phone_number: displayPhoneNumber } = phone;
+
+    // Step 4: Resolve phone number ID — skip if already obtained from messaging scope
+    let phoneNumberId: string;
+    let displayPhoneNumber: string;
+
+    if (directPhoneNumberId && !wabaId) {
+      // Fast-path: phone number ID came directly from whatsapp_business_messaging granular scope
+      console.log(`${logPrefix} step4: looking up phone number details for id=${directPhoneNumberId}`);
+      const phoneDetailResp = await axios.get<{ id: string; display_phone_number: string }>(
+        `${META_GRAPH_BASE}/${META_API_VERSION}/${directPhoneNumberId}`,
+        { params: { fields: 'id,display_phone_number', access_token: accessToken } }
+      );
+      console.log(`${logPrefix} step4 response:`, JSON.stringify(phoneDetailResp.data));
+      phoneNumberId = phoneDetailResp.data.id;
+      displayPhoneNumber = phoneDetailResp.data.display_phone_number;
+    } else {
+      console.log(`${logPrefix} step4: resolving phone numbers for waba_id=${wabaId}`);
+      const phoneResp = await axios.get<{ data?: Array<{ id: string; display_phone_number: string }> }>(
+        `${META_GRAPH_BASE}/${META_API_VERSION}/${wabaId}/phone_numbers`,
+        {
+          params: { fields: 'id,display_phone_number', access_token: accessToken },
+        }
+      );
+      console.log(`${logPrefix} step4 response:`, JSON.stringify(phoneResp.data));
+      const phone = phoneResp.data.data?.[0];
+      if (!phone) {
+        console.error(`${logPrefix} step4 FAILED no phone numbers found`);
+        res.status(422).json({ error: 'No phone numbers found in your WhatsApp Business Account.' });
+        return;
+      }
+      phoneNumberId = phone.id;
+      displayPhoneNumber = phone.display_phone_number;
+    }
     console.log(`${logPrefix} step4 OK phone_number_id=${phoneNumberId} display=${displayPhoneNumber}`);
 
     // Step 5: Validate credentials against Meta
