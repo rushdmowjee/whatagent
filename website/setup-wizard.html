@@ -1333,7 +1333,7 @@
           config_id: embeddedSignupConfig.config_id,
           response_type: 'code',
           override_default_response_type: true,
-          extras: { setup: {} },
+          extras: { sessionInfoVersion: '3', setup: {} },
         }
       : {
           scope: embeddedSignupConfig.scopes.join(','),

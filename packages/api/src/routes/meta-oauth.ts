@@ -29,12 +29,12 @@ const callbackLimiter = rateLimit({
  */
 metaOauthRouter.get('/start', (req: Request, res: Response): void => {
   const appId = process.env.META_APP_ID;
-  if (!appId) {
+  const configId = process.env.META_EMBEDDED_SIGNUP_CONFIG_ID;
+  if (!appId || !configId) {
     res.status(503).json({ error: 'Meta embedded signup is not configured on this server.' });
     return;
   }
-  const configId = process.env.META_EMBEDDED_SIGNUP_CONFIG_ID || null;
-  res.json({ app_id: appId, scopes: EMBEDDED_SIGNUP_SCOPES, config_id: configId });
+  res.json({ app_id: appId, config_id: configId, scopes: EMBEDDED_SIGNUP_SCOPES });
 });
 
 /**
