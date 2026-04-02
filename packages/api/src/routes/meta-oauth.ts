@@ -113,20 +113,30 @@ metaOauthRouter.post('/callback', callbackLimiter, async (req: Request, res: Res
     }
     console.log(`${logPrefix} step1 OK token_prefix=${accessToken.slice(0, 10)}...`);
 
-    // Step 3: Resolve WABA ID
-    console.log(`${logPrefix} step3: resolving WABA ID`);
-    const bizResp = await axios.get<{
-      data?: Array<{ whatsapp_business_accounts?: { data: Array<{ id: string }> } }>;
+    // Step 3: Resolve WABA ID via debug_token granular_scopes.
+    // The Embedded Signup token has whatsapp_business_management scope but NOT business_management,
+    // so /me/businesses returns (#100) Missing Permission. The correct approach is to call
+    // debug_token: the granular_scopes entry for whatsapp_business_management lists the
+    // WABA ID(s) the token was granted access to.
+    console.log(`${logPrefix} step3: resolving WABA ID via debug_token`);
+    const appToken = `${appId}|${appSecret}`;
+    const debugResp = await axios.get<{
+      data?: {
+        granular_scopes?: Array<{ scope: string; target_ids?: string[] }>;
+      };
     }>(
-      `${META_GRAPH_BASE}/${META_API_VERSION}/me/businesses`,
+      `${META_GRAPH_BASE}/debug_token`,
       {
-        params: { fields: 'whatsapp_business_accounts', access_token: accessToken },
+        params: { input_token: accessToken, access_token: appToken },
       }
     );
-    console.log(`${logPrefix} step3 response:`, JSON.stringify(bizResp.data));
-    const wabaId = bizResp.data.data?.[0]?.whatsapp_business_accounts?.data?.[0]?.id;
+    console.log(`${logPrefix} step3 debug_token response:`, JSON.stringify(debugResp.data));
+    const wabaScope = debugResp.data.data?.granular_scopes?.find(
+      (s) => s.scope === 'whatsapp_business_management'
+    );
+    const wabaId = wabaScope?.target_ids?.[0];
     if (!wabaId) {
-      console.error(`${logPrefix} step3 FAILED no WABA found in response`);
+      console.error(`${logPrefix} step3 FAILED no WABA ID in debug_token granular_scopes`);
       res.status(422).json({ error: 'No WhatsApp Business Account found. Complete WhatsApp Business setup and try again.' });
       return;
     }
