@@ -70,25 +70,44 @@ metaOauthRouter.post('/callback', callbackLimiter, async (req: Request, res: Res
 
   const { email, app_name, code } = parsed.data;
 
+  const logPrefix = `[meta-oauth][${Date.now()}]`;
+  console.log(`${logPrefix} callback start email=${email} code_prefix=${code.slice(0, 8)}...`);
+
   try {
     // Step 1: Exchange Embedded Signup code → business integration system user access token.
     // The config_id popup flow returns the code directly to the FB.login() JS callback — there
     // is no redirect, so Meta does not record a redirect_uri for this code. Sending any
     // redirect_uri in the token exchange causes a mismatch error; omit it entirely.
-    const tokenResp = await axios.get<{ access_token: string }>(
-      `${META_GRAPH_BASE}/v22.0/oauth/access_token`,
-      {
-        params: {
-          client_id: appId,
-          client_secret: appSecret,
-          code,
-        },
+    console.log(`${logPrefix} step1: exchanging code (no redirect_uri) app_id=${appId}`);
+    let tokenResp: { data: { access_token?: string; error?: { message: string; code: number; type: string } } };
+    try {
+      tokenResp = await axios.get(
+        `${META_GRAPH_BASE}/v22.0/oauth/access_token`,
+        {
+          params: {
+            client_id: appId,
+            client_secret: appSecret,
+            code,
+          },
+        }
+      );
+    } catch (tokenErr: unknown) {
+      if (axios.isAxiosError(tokenErr)) {
+        console.error(`${logPrefix} step1 FAILED status=${tokenErr.response?.status}`, JSON.stringify(tokenErr.response?.data));
       }
-    );
+      throw tokenErr;
+    }
     // The Embedded Signup code exchange returns a business token (already long-lived, ~60 days).
     const accessToken = tokenResp.data.access_token;
+    if (!accessToken) {
+      console.error(`${logPrefix} step1 FAILED no access_token in response:`, JSON.stringify(tokenResp.data));
+      res.status(422).json({ error: 'Meta did not return an access token', detail: tokenResp.data });
+      return;
+    }
+    console.log(`${logPrefix} step1 OK token_prefix=${accessToken.slice(0, 10)}...`);
 
     // Step 3: Resolve WABA ID
+    console.log(`${logPrefix} step3: resolving WABA ID`);
     const bizResp = await axios.get<{
       data?: Array<{ whatsapp_business_accounts?: { data: Array<{ id: string }> } }>;
     }>(
@@ -97,32 +116,42 @@ metaOauthRouter.post('/callback', callbackLimiter, async (req: Request, res: Res
         params: { fields: 'whatsapp_business_accounts', access_token: accessToken },
       }
     );
+    console.log(`${logPrefix} step3 response:`, JSON.stringify(bizResp.data));
     const wabaId = bizResp.data.data?.[0]?.whatsapp_business_accounts?.data?.[0]?.id;
     if (!wabaId) {
+      console.error(`${logPrefix} step3 FAILED no WABA found in response`);
       res.status(422).json({ error: 'No WhatsApp Business Account found. Complete WhatsApp Business setup and try again.' });
       return;
     }
+    console.log(`${logPrefix} step3 OK waba_id=${wabaId}`);
 
     // Step 4: Resolve phone number ID
+    console.log(`${logPrefix} step4: resolving phone numbers for waba_id=${wabaId}`);
     const phoneResp = await axios.get<{ data?: Array<{ id: string; display_phone_number: string }> }>(
       `${META_GRAPH_BASE}/${META_API_VERSION}/${wabaId}/phone_numbers`,
       {
         params: { fields: 'id,display_phone_number', access_token: accessToken },
       }
     );
+    console.log(`${logPrefix} step4 response:`, JSON.stringify(phoneResp.data));
     const phone = phoneResp.data.data?.[0];
     if (!phone) {
+      console.error(`${logPrefix} step4 FAILED no phone numbers found`);
       res.status(422).json({ error: 'No phone numbers found in your WhatsApp Business Account.' });
       return;
     }
     const { id: phoneNumberId, display_phone_number: displayPhoneNumber } = phone;
+    console.log(`${logPrefix} step4 OK phone_number_id=${phoneNumberId} display=${displayPhoneNumber}`);
 
     // Step 5: Validate credentials against Meta
+    console.log(`${logPrefix} step5: validating credentials`);
     const validation = await validateCredentials(phoneNumberId, accessToken);
     if (!validation.valid) {
+      console.error(`${logPrefix} step5 FAILED validation error:`, validation.error);
       res.status(422).json({ error: 'Meta credential validation failed', detail: validation.error });
       return;
     }
+    console.log(`${logPrefix} step5 OK credentials valid`);
 
     // Step 6: Register account (idempotent on email)
     const db = getDb();
@@ -181,7 +210,7 @@ metaOauthRouter.post('/callback', callbackLimiter, async (req: Request, res: Res
     if (axios.isAxiosError(err)) {
       const metaErrObj = err.response?.data?.error;
       if (metaErrObj) {
-        console.error('Meta OAuth error response:', JSON.stringify(metaErrObj));
+        console.error(`${logPrefix} Meta OAuth error response:`, JSON.stringify(metaErrObj));
         res.status(422).json({
           error: 'Meta OAuth error',
           detail: metaErrObj.message,
@@ -191,8 +220,9 @@ metaOauthRouter.post('/callback', callbackLimiter, async (req: Request, res: Res
         });
         return;
       }
+      console.error(`${logPrefix} Axios error status=${err.response?.status}:`, JSON.stringify(err.response?.data));
     }
-    console.error('Meta OAuth callback error:', err);
+    console.error(`${logPrefix} Meta OAuth callback error:`, err);
     res.status(500).json({ error: 'OAuth exchange failed. Please try again.' });
   }
 });
