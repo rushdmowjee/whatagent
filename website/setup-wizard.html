@@ -1328,11 +1328,16 @@
       }
     }, 8000);
 
+    // redirect_uri must be explicitly set in FB.login() options so Meta records it
+    // in Phase 1 (OAuth dialog). We then send the same value in Phase 2 (token exchange)
+    // on the backend. Without this, Meta uses an internal default that we cannot match.
+    const OAUTH_REDIRECT_URI = API_BASE + '/v1/auth/meta/callback';
     const fbLoginOptions = embeddedSignupConfig.config_id
       ? {
           config_id: embeddedSignupConfig.config_id,
           response_type: 'code',
           override_default_response_type: true,
+          redirect_uri: OAUTH_REDIRECT_URI,
           extras: { sessionInfoVersion: '3', setup: {} },
         }
       : {

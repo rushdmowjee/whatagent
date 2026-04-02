@@ -75,12 +75,11 @@ metaOauthRouter.post('/callback', callbackLimiter, async (req: Request, res: Res
 
   try {
     // Step 1: Exchange Embedded Signup code → business integration system user access token.
-    // The FB.login() popup uses https://www.facebook.com/connect/login_success.html as its
-    // internal redirect_uri (standard JSSDK web behavior). Meta records this during the OAuth
-    // dialog (Phase 1) and requires the same value in the code exchange (Phase 2). Omitting it
-    // causes error_subcode 36008 (redirect_uri mismatch).
-    const JS_SDK_REDIRECT = 'https://www.facebook.com/connect/login_success.html';
-    console.log(`${logPrefix} step1: exchanging code redirect_uri=${JS_SDK_REDIRECT} app_id=${appId}`);
+    // redirect_uri must match exactly what was set in the FB.login() call (Phase 1).
+    // The frontend sets redirect_uri: API_BASE + '/v1/auth/meta/callback' in FB.login() options
+    // so Meta records a known, consistent value. We mirror that here in the token exchange.
+    const oauthRedirectUri = `${apiBase}/v1/auth/meta/callback`;
+    console.log(`${logPrefix} step1: exchanging code redirect_uri=${oauthRedirectUri} app_id=${appId}`);
     let tokenResp: { data: { access_token?: string; error?: { message: string; code: number; type: string } } };
     try {
       tokenResp = await axios.get(
@@ -90,7 +89,7 @@ metaOauthRouter.post('/callback', callbackLimiter, async (req: Request, res: Res
             client_id: appId,
             client_secret: appSecret,
             code,
-            redirect_uri: JS_SDK_REDIRECT,
+            redirect_uri: oauthRedirectUri,
           },
         }
       );
