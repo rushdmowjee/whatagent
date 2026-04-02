@@ -72,8 +72,9 @@ metaOauthRouter.post('/callback', callbackLimiter, async (req: Request, res: Res
 
   try {
     // Step 1: Exchange Embedded Signup code → business integration system user access token.
-    // The FB.login popup flow uses facebook.com/connect/login_success.html as the internal
-    // redirect_uri — the token exchange must send this exact URI to match what Meta recorded.
+    // The config_id popup flow returns the code directly to the FB.login() JS callback — there
+    // is no redirect, so Meta does not record a redirect_uri for this code. Sending any
+    // redirect_uri in the token exchange causes a mismatch error; omit it entirely.
     const tokenResp = await axios.get<{ access_token: string }>(
       `${META_GRAPH_BASE}/v22.0/oauth/access_token`,
       {
@@ -81,7 +82,6 @@ metaOauthRouter.post('/callback', callbackLimiter, async (req: Request, res: Res
           client_id: appId,
           client_secret: appSecret,
           code,
-          redirect_uri: 'https://www.facebook.com/connect/login_success.html',
         },
       }
     );
