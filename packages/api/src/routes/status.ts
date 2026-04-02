@@ -3,5 +3,5 @@ import { Router, Request, Response } from 'express';
 export const statusRouter = Router();
 
 statusRouter.get('/', (_req: Request, res: Response): void => {
-  res.json({ status: 'ok', service: 'WhatAgent API', version: '1.0.0', build: 'fb3a703' });
+  res.json({ status: 'ok', service: 'WhatAgent API', version: '1.0.0', build: 'f7174ff' });
 });
