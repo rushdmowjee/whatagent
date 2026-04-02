@@ -1328,23 +1328,22 @@
       }
     }, 8000);
 
-    // DEBUG: intercept window.open to capture the actual OAuth dialog URL.
-    // The JSSDK may ignore any redirect_uri we pass — this captures what it really uses.
-    let capturedDialogUrl = null;
+    // The JSSDK uses a dynamic XD Arbiter URL as redirect_uri for the config_id popup flow.
+    // This URL changes every session (different cb/frame/origin params). We intercept
+    // window.open to capture it, then send it to the backend so the token exchange uses
+    // the exact same redirect_uri that was recorded in Phase 1.
+    let capturedOauthRedirectUri = null;
     const _origOpen = window.open;
     window.open = function(url) {
       if (url && typeof url === 'string' && url.includes('facebook.com')) {
-        capturedDialogUrl = url;
-        console.log('[WhatAgent debug] FB dialog URL:', url);
         try {
           const u = new URL(url);
-          console.log('[WhatAgent debug] redirect_uri param:', u.searchParams.get('redirect_uri'));
+          capturedOauthRedirectUri = u.searchParams.get('redirect_uri');
         } catch(e) {}
       }
       return _origOpen.apply(this, arguments);
     };
 
-    const OAUTH_REDIRECT_URI = API_BASE + '/v1/auth/meta/callback';
     const fbLoginOptions = embeddedSignupConfig.config_id
       ? {
           config_id: embeddedSignupConfig.config_id,
@@ -1375,7 +1374,7 @@
       fetch(API_BASE + '/v1/auth/meta/callback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, app_name: 'My App', code: response.authResponse.code, debug_dialog_url: capturedDialogUrl }),
+        body: JSON.stringify({ email, app_name: 'My App', code: response.authResponse.code, oauth_redirect_uri: capturedOauthRedirectUri }),
       })
         .then(function(res) { return res.json().then(function(data) { return { res: res, data: data }; }); })
         .then(function(result) {

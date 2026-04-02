@@ -60,7 +60,10 @@ metaOauthRouter.post('/callback', callbackLimiter, async (req: Request, res: Res
     email: z.string().email(),
     app_name: z.string().min(1).max(100).default('My App'),
     code: z.string().min(1),
-    debug_dialog_url: z.string().optional(),
+    // The JSSDK uses a dynamic XD Arbiter URL as redirect_uri (changes every session).
+    // The frontend captures it via window.open interception and sends it here so we can
+    // mirror it exactly in the token exchange (Phase 2 must match Phase 1).
+    oauth_redirect_uri: z.string().optional(),
   });
 
   const parsed = schema.safeParse(req.body);
@@ -69,25 +72,19 @@ metaOauthRouter.post('/callback', callbackLimiter, async (req: Request, res: Res
     return;
   }
 
-  const { email, app_name, code, debug_dialog_url } = parsed.data;
+  const { email, app_name, code, oauth_redirect_uri } = parsed.data;
 
   const logPrefix = `[meta-oauth][${Date.now()}]`;
   console.log(`${logPrefix} callback start email=${email} code_prefix=${code.slice(0, 8)}...`);
-  if (debug_dialog_url) {
-    console.log(`${logPrefix} debug_dialog_url=${debug_dialog_url}`);
-    try {
-      const dialogUrl = new URL(debug_dialog_url);
-      console.log(`${logPrefix} dialog redirect_uri param=${dialogUrl.searchParams.get('redirect_uri')}`);
-    } catch (_) { /* ignore parse errors */ }
-  }
 
   try {
     // Step 1: Exchange Embedded Signup code → business integration system user access token.
-    // redirect_uri must match exactly what was set in the FB.login() call (Phase 1).
-    // The frontend sets redirect_uri: API_BASE + '/v1/auth/meta/callback' in FB.login() options
-    // so Meta records a known, consistent value. We mirror that here in the token exchange.
-    const oauthRedirectUri = `${apiBase}/v1/auth/meta/callback`;
-    console.log(`${logPrefix} step1: exchanging code redirect_uri=${oauthRedirectUri} app_id=${appId}`);
+    // The JSSDK uses a dynamic XD Arbiter URL as redirect_uri (e.g.
+    // https://staticxx.facebook.com/x/connect/xd_arbiter/?version=46#cb=...&domain=whatagent.dev&...)
+    // This URL changes every session. The frontend captures the exact URL from window.open
+    // and forwards it here so Phase 1 and Phase 2 redirect_uri values match precisely.
+    const oauthRedirectUri = oauth_redirect_uri || undefined;
+    console.log(`${logPrefix} step1: exchanging code redirect_uri=${oauthRedirectUri ?? '(none)'} app_id=${appId}`);
     let tokenResp: { data: { access_token?: string; error?: { message: string; code: number; type: string } } };
     try {
       tokenResp = await axios.get(
@@ -97,7 +94,7 @@ metaOauthRouter.post('/callback', callbackLimiter, async (req: Request, res: Res
             client_id: appId,
             client_secret: appSecret,
             code,
-            redirect_uri: oauthRedirectUri,
+            ...(oauthRedirectUri ? { redirect_uri: oauthRedirectUri } : {}),
           },
         }
       );
