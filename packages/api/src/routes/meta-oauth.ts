@@ -72,8 +72,8 @@ metaOauthRouter.post('/callback', callbackLimiter, async (req: Request, res: Res
 
   try {
     // Step 1: Exchange Embedded Signup code → business integration system user access token.
-    // Meta requires the redirect_uri to match what is registered in the app's Valid OAuth Redirect URIs.
-    // This URL is registered there and must also be set in the Embedded Signup Configuration.
+    // The FB.login popup flow uses facebook.com/connect/login_success.html as the internal
+    // redirect_uri — the token exchange must send this exact URI to match what Meta recorded.
     const tokenResp = await axios.get<{ access_token: string }>(
       `${META_GRAPH_BASE}/v22.0/oauth/access_token`,
       {
@@ -81,7 +81,7 @@ metaOauthRouter.post('/callback', callbackLimiter, async (req: Request, res: Res
           client_id: appId,
           client_secret: appSecret,
           code,
-          redirect_uri: 'https://api.whatagent.dev/v1/auth/meta/callback',
+          redirect_uri: 'https://www.facebook.com/connect/login_success.html',
         },
       }
     );
