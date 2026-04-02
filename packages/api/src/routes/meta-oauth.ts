@@ -60,6 +60,7 @@ metaOauthRouter.post('/callback', callbackLimiter, async (req: Request, res: Res
     email: z.string().email(),
     app_name: z.string().min(1).max(100).default('My App'),
     code: z.string().min(1),
+    debug_dialog_url: z.string().optional(),
   });
 
   const parsed = schema.safeParse(req.body);
@@ -68,10 +69,17 @@ metaOauthRouter.post('/callback', callbackLimiter, async (req: Request, res: Res
     return;
   }
 
-  const { email, app_name, code } = parsed.data;
+  const { email, app_name, code, debug_dialog_url } = parsed.data;
 
   const logPrefix = `[meta-oauth][${Date.now()}]`;
   console.log(`${logPrefix} callback start email=${email} code_prefix=${code.slice(0, 8)}...`);
+  if (debug_dialog_url) {
+    console.log(`${logPrefix} debug_dialog_url=${debug_dialog_url}`);
+    try {
+      const dialogUrl = new URL(debug_dialog_url);
+      console.log(`${logPrefix} dialog redirect_uri param=${dialogUrl.searchParams.get('redirect_uri')}`);
+    } catch (_) { /* ignore parse errors */ }
+  }
 
   try {
     // Step 1: Exchange Embedded Signup code → business integration system user access token.

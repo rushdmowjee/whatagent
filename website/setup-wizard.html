@@ -1328,16 +1328,28 @@
       }
     }, 8000);
 
-    // redirect_uri must be explicitly set in FB.login() options so Meta records it
-    // in Phase 1 (OAuth dialog). We then send the same value in Phase 2 (token exchange)
-    // on the backend. Without this, Meta uses an internal default that we cannot match.
+    // DEBUG: intercept window.open to capture the actual OAuth dialog URL.
+    // The JSSDK may ignore any redirect_uri we pass — this captures what it really uses.
+    let capturedDialogUrl = null;
+    const _origOpen = window.open;
+    window.open = function(url) {
+      if (url && typeof url === 'string' && url.includes('facebook.com')) {
+        capturedDialogUrl = url;
+        console.log('[WhatAgent debug] FB dialog URL:', url);
+        try {
+          const u = new URL(url);
+          console.log('[WhatAgent debug] redirect_uri param:', u.searchParams.get('redirect_uri'));
+        } catch(e) {}
+      }
+      return _origOpen.apply(this, arguments);
+    };
+
     const OAUTH_REDIRECT_URI = API_BASE + '/v1/auth/meta/callback';
     const fbLoginOptions = embeddedSignupConfig.config_id
       ? {
           config_id: embeddedSignupConfig.config_id,
           response_type: 'code',
           override_default_response_type: true,
-          redirect_uri: OAUTH_REDIRECT_URI,
           extras: { sessionInfoVersion: '3', setup: {} },
         }
       : {
@@ -1363,7 +1375,7 @@
       fetch(API_BASE + '/v1/auth/meta/callback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, app_name: 'My App', code: response.authResponse.code }),
+        body: JSON.stringify({ email, app_name: 'My App', code: response.authResponse.code, debug_dialog_url: capturedDialogUrl }),
       })
         .then(function(res) { return res.json().then(function(data) { return { res: res, data: data }; }); })
         .then(function(result) {
