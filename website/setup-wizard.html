@@ -1328,22 +1328,6 @@
       }
     }, 8000);
 
-    // The JSSDK uses a dynamic XD Arbiter URL as redirect_uri for the config_id popup flow.
-    // This URL changes every session (different cb/frame/origin params). We intercept
-    // window.open to capture it, then send it to the backend so the token exchange uses
-    // the exact same redirect_uri that was recorded in Phase 1.
-    let capturedOauthRedirectUri = null;
-    const _origOpen = window.open;
-    window.open = function(url) {
-      if (url && typeof url === 'string' && url.includes('facebook.com')) {
-        try {
-          const u = new URL(url);
-          capturedOauthRedirectUri = u.searchParams.get('redirect_uri');
-        } catch(e) {}
-      }
-      return _origOpen.apply(this, arguments);
-    };
-
     const fbLoginOptions = embeddedSignupConfig.config_id
       ? {
           config_id: embeddedSignupConfig.config_id,
@@ -1374,7 +1358,7 @@
       fetch(API_BASE + '/v1/auth/meta/callback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, app_name: 'My App', code: response.authResponse.code, oauth_redirect_uri: capturedOauthRedirectUri }),
+        body: JSON.stringify({ email, app_name: 'My App', code: response.authResponse.code }),
       })
         .then(function(res) { return res.json().then(function(data) { return { res: res, data: data }; }); })
         .then(function(result) {

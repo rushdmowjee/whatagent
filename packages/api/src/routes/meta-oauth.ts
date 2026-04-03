@@ -60,10 +60,6 @@ metaOauthRouter.post('/callback', callbackLimiter, async (req: Request, res: Res
     email: z.string().email(),
     app_name: z.string().min(1).max(100).default('My App'),
     code: z.string().min(1),
-    // The JSSDK uses a dynamic XD Arbiter URL as redirect_uri (changes every session).
-    // The frontend captures it via window.open interception and sends it here so we can
-    // mirror it exactly in the token exchange (Phase 2 must match Phase 1).
-    oauth_redirect_uri: z.string().optional(),
   });
 
   const parsed = schema.safeParse(req.body);
@@ -72,19 +68,17 @@ metaOauthRouter.post('/callback', callbackLimiter, async (req: Request, res: Res
     return;
   }
 
-  const { email, app_name, code, oauth_redirect_uri } = parsed.data;
+  const { email, app_name, code } = parsed.data;
 
   const logPrefix = `[meta-oauth][${Date.now()}]`;
   console.log(`${logPrefix} callback start email=${email} code_prefix=${code.slice(0, 8)}...`);
 
   try {
-    // Step 1: Exchange Embedded Signup code → business integration system user access token.
-    // The JSSDK uses a dynamic XD Arbiter URL as redirect_uri (e.g.
-    // https://staticxx.facebook.com/x/connect/xd_arbiter/?version=46#cb=...&domain=whatagent.dev&...)
-    // This URL changes every session. The frontend captures the exact URL from window.open
-    // and forwards it here so Phase 1 and Phase 2 redirect_uri values match precisely.
-    const oauthRedirectUri = oauth_redirect_uri || undefined;
-    console.log(`${logPrefix} step1: exchanging code redirect_uri=${oauthRedirectUri ?? '(none)'} app_id=${appId}`);
+    // Step 1: Exchange WhatsApp Embedded Signup code → business integration system user access token.
+    // The WhatsApp Embedded Signup WABA code (returned via authResponse.code in the JS callback)
+    // does NOT use redirect_uri in the token exchange. Meta records no redirect for this code type —
+    // sending one causes a 36008 mismatch error. Omit it entirely.
+    console.log(`${logPrefix} step1: exchanging code (no redirect_uri) app_id=${appId}`);
     let tokenResp: { data: { access_token?: string; error?: { message: string; code: number; type: string } } };
     try {
       tokenResp = await axios.get(
@@ -94,7 +88,6 @@ metaOauthRouter.post('/callback', callbackLimiter, async (req: Request, res: Res
             client_id: appId,
             client_secret: appSecret,
             code,
-            ...(oauthRedirectUri ? { redirect_uri: oauthRedirectUri } : {}),
           },
         }
       );
