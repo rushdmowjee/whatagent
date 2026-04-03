@@ -1250,29 +1250,8 @@
     }
   }
 
-  function loadFbSdk(appId) {
-    return new Promise((resolve) => {
-      if (window.FB) {
-        FB.init({ appId, cookie: true, xfbml: false, version: 'v21.0' });
-        resolve();
-        return;
-      }
-      window.fbAsyncInit = function () {
-        FB.init({ appId, cookie: true, xfbml: false, version: 'v21.0' });
-        resolve();
-      };
-      const s = document.createElement('script');
-      s.src = 'https://connect.facebook.net/en_US/sdk.js';
-      document.head.appendChild(s);
-    });
-  }
-
-  // Pre-loaded embedded signup config and SDK state.
-  // Populated eagerly on page load so FB.login can be called synchronously on click
-  // (async awaits before FB.login break the browser's user-gesture context and cause
-  // popup blockers to silently swallow the login window).
-  let embeddedSignupConfig = null;  // { app_id, scopes } from /v1/auth/meta/start
-  let fbSdkReady = false;           // true once window.FB is initialised
+  // Pre-loaded embedded signup config from /v1/auth/meta/start
+  let embeddedSignupConfig = null;
 
   async function preloadEmbeddedSignup() {
     try {
@@ -1281,13 +1260,6 @@
       embeddedSignupConfig = await r.json();
     } catch {
       return; // network error — same fallback
-    }
-
-    try {
-      await loadFbSdk(embeddedSignupConfig.app_id);
-      fbSdkReady = true;
-    } catch {
-      // SDK failed to load; startEmbeddedSignup will surface the error on click
     }
   }
 
@@ -1300,14 +1272,9 @@
       return;
     }
 
-    // SDK not yet ready — either not configured or still loading
-    if (!embeddedSignupConfig || !fbSdkReady) {
-      if (!embeddedSignupConfig) {
-        // Not configured on this server — fall back to manual flow
-        goManual();
-      } else {
-        showEmbeddedStatus('error', '✗ Meta SDK is still loading. Please wait a moment and try again.');
-      }
+    if (!embeddedSignupConfig) {
+      // Not configured on this server — fall back to manual flow
+      goManual();
       return;
     }
 
@@ -1317,64 +1284,72 @@
     spinner.classList.add('visible');
     document.getElementById('embeddedStatus').style.display = 'none';
 
-    // FB.login must be called synchronously here (direct user-gesture context) so
-    // browsers do not block the popup. The config and SDK were pre-loaded above.
-    let fbCallbackFired = false;
-    const popupTimeout = setTimeout(() => {
-      if (!fbCallbackFired) {
-        btn.disabled = false;
-        spinner.classList.remove('visible');
-        showEmbeddedStatus('error', '✗ Meta popup did not open. Check: (1) allow popups for whatagent.dev in your browser, (2) confirm whatagent.dev is added as an App Domain in Meta App Settings → Basic.');
-      }
-    }, 8000);
+    const appId = embeddedSignupConfig.app_id;
+    const configId = embeddedSignupConfig.config_id;
+    const redirectUri = API_BASE + '/v1/auth/meta/callback';
+    const stateParam = btoa(JSON.stringify({ email: email, app_name: 'My App' }));
 
-    const fbLoginOptions = embeddedSignupConfig.config_id
-      ? {
-          config_id: embeddedSignupConfig.config_id,
-          response_type: 'code',
-          override_default_response_type: true,
-          extras: { sessionInfoVersion: '3', setup: {} },
-        }
-      : {
-          scope: embeddedSignupConfig.scopes.join(','),
-          response_type: 'code',
-          override_default_response_type: true,
-        };
+    const oauthUrl = 'https://www.facebook.com/dialog/oauth' +
+      '?client_id=' + encodeURIComponent(appId) +
+      '&redirect_uri=' + encodeURIComponent(redirectUri) +
+      '&scope=whatsapp_business_messaging%2Cwhatsapp_business_management' +
+      '&response_type=code' +
+      (configId ? '&config_id=' + encodeURIComponent(configId) : '') +
+      '&state=' + encodeURIComponent(stateParam);
 
-    // FB.login callback must NOT be async — Meta SDK rejects async functions
-    // ("Expression is of type asyncfunction, not function"). Use .then() chaining instead.
-    FB.login((response) => {
+    const popup = window.open(oauthUrl, 'meta_oauth', 'width=800,height=700,scrollbars=yes,resizable=yes');
+
+    if (!popup) {
+      btn.disabled = false;
+      spinner.classList.remove('visible');
+      showEmbeddedStatus('error', '✗ Popup blocked. Please allow popups for this site and try again.');
+      return;
+    }
+
+    const apiOrigin = new URL(API_BASE).origin;
+    const popupTimeout = setTimeout(function() {
+      window.removeEventListener('message', onOauthMessage);
+      btn.disabled = false;
+      spinner.classList.remove('visible');
+      showEmbeddedStatus('error', '✗ Meta signup timed out. Please try again.');
+    }, 300000);
+
+    function onOauthMessage(event) {
+      if (event.origin !== apiOrigin) return;
+      const data = event.data;
+      if (!data || typeof data !== 'object' || (!data.code && !data.error)) return;
+
       clearTimeout(popupTimeout);
-      fbCallbackFired = true;
-      if (!response.authResponse?.code) {
+      window.removeEventListener('message', onOauthMessage);
+
+      if (data.error) {
         btn.disabled = false;
         spinner.classList.remove('visible');
-        showEmbeddedStatus('error', '✗ Meta login was cancelled. Try again or use manual setup.');
+        showEmbeddedStatus('error', '✗ ' + data.error);
         return;
       }
 
-      showEmbeddedStatus('loading', '⏳ Connecting your WhatsApp account...');
+      showEmbeddedStatus('info', '⏳ Connecting your WhatsApp account...');
 
       fetch(API_BASE + '/v1/auth/meta/callback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, app_name: 'My App', code: response.authResponse.code }),
+        body: JSON.stringify({ email: email, app_name: 'My App', code: data.code }),
       })
-        .then(function(res) { return res.json().then(function(data) { return { res: res, data: data }; }); })
+        .then(function(res) { return res.json().then(function(d) { return { res: res, data: d }; }); })
         .then(function(result) {
           spinner.classList.remove('visible');
           btn.disabled = false;
-          var res = result.res, data = result.data;
-          if (res.ok && data.api_key) {
-            state.apiKey = data.api_key;
-            state.connectedNumber = data.display_phone_number || '';
-            document.getElementById('successNumber').textContent = data.display_phone_number || '';
-            document.getElementById('successApiKey').textContent = data.api_key;
+          if (result.res.ok && result.data.api_key) {
+            state.apiKey = result.data.api_key;
+            state.connectedNumber = result.data.display_phone_number || '';
+            document.getElementById('successNumber').textContent = result.data.display_phone_number || '';
+            document.getElementById('successApiKey').textContent = result.data.api_key;
             showSuccess();
           } else {
-            var errMsg = data.error || 'Connection failed. Please try again.';
-            if (data.detail) errMsg += ' (' + data.detail + ')';
-            if (data.meta_code) errMsg += ' [code:' + data.meta_code + (data.meta_subcode ? '/sub:' + data.meta_subcode : '') + ']';
+            var errMsg = result.data.error || 'Connection failed. Please try again.';
+            if (result.data.detail) errMsg += ' (' + result.data.detail + ')';
+            if (result.data.meta_code) errMsg += ' [code:' + result.data.meta_code + (result.data.meta_subcode ? '/sub:' + result.data.meta_subcode : '') + ']';
             showEmbeddedStatus('error', '✗ ' + errMsg);
           }
         })
@@ -1383,7 +1358,9 @@
           btn.disabled = false;
           showEmbeddedStatus('error', '✗ Could not reach WhatAgent API. Please try again.');
         });
-    }, fbLoginOptions);
+    }
+
+    window.addEventListener('message', onOauthMessage);
   }
 
   // ── Step 2 ─────────────────────────────────────────────

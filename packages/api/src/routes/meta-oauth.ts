@@ -38,6 +38,28 @@ metaOauthRouter.get('/start', (req: Request, res: Response): void => {
 });
 
 /**
+ * GET /v1/auth/meta/callback
+ * Receives the ES Response Code redirect from the WhatsApp Embedded Signup popup.
+ * Passes the code back to the opener window via postMessage, then closes the popup.
+ */
+metaOauthRouter.get('/callback', (req: Request, res: Response): void => {
+  const code = req.query.code as string | undefined;
+  const state = req.query.state as string | undefined;
+  const error = req.query.error as string | undefined;
+  const errorDescription = req.query.error_description as string | undefined;
+
+  const payload = error
+    ? { error: errorDescription || error }
+    : code
+      ? { code, state: state || '' }
+      : { error: 'No code returned by Meta.' };
+
+  const script = `window.opener?.postMessage(${JSON.stringify(payload)},'*');window.close();`;
+  res.setHeader('Content-Type', 'text/html');
+  res.send(`<!DOCTYPE html><html><head><title>Connecting...</title></head><body><script>${script}<\/script></body></html>`);
+});
+
+/**
  * POST /v1/auth/meta/callback
  * Exchanges the OAuth code returned by the Embedded Signup widget for a WhatAgent API key.
  * Creates a new account (or re-uses an existing one for the same email) and immediately
