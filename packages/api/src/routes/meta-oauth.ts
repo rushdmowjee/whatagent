@@ -95,12 +95,17 @@ metaOauthRouter.post('/callback', callbackLimiter, async (req: Request, res: Res
   const logPrefix = `[meta-oauth][${Date.now()}]`;
   console.log(`${logPrefix} callback start email=${email} code_prefix=${code.slice(0, 8)}...`);
 
+  // The redirect_uri used in the OAuth dialog popup (facebook.com/dialog/oauth).
+  // This must match in the token exchange for standard OAuth codes.
+  // For ES Response Codes (business.facebook.com/onboard), Meta ignores this field — but
+  // including it is harmless and required for standard codes to prevent error 36008.
+  const callbackRedirectUri = `${apiBase}/v1/auth/meta/callback`;
+
   try {
-    // Step 1: Exchange WhatsApp Embedded Signup code → business integration system user access token.
-    // The WhatsApp Embedded Signup WABA code (returned via authResponse.code in the JS callback)
-    // does NOT use redirect_uri in the token exchange. Meta records no redirect for this code type —
-    // sending one causes a 36008 mismatch error. Omit it entirely.
-    console.log(`${logPrefix} step1: exchanging code (no redirect_uri) app_id=${appId}`);
+    // Step 1: Exchange OAuth code → business integration system user access token.
+    // Includes redirect_uri to match what was sent in the dialog URL (required for
+    // standard OAuth codes; harmless for ES Response Codes).
+    console.log(`${logPrefix} step1: exchanging code redirect_uri=${callbackRedirectUri} app_id=${appId}`);
     let tokenResp: { data: { access_token?: string; error?: { message: string; code: number; type: string } } };
     try {
       tokenResp = await axios.get(
@@ -109,6 +114,7 @@ metaOauthRouter.post('/callback', callbackLimiter, async (req: Request, res: Res
           params: {
             client_id: appId,
             client_secret: appSecret,
+            redirect_uri: callbackRedirectUri,
             code,
           },
         }
