@@ -1286,16 +1286,14 @@
 
     const appId = embeddedSignupConfig.app_id;
     const configId = embeddedSignupConfig.config_id;
-    const redirectUri = API_BASE + '/v1/auth/meta/callback';
-    const stateParam = btoa(JSON.stringify({ email: email, app_name: 'My App' }));
+    const extrasParam = JSON.stringify({ setup: {}, sessionInfoVersion: 2 });
 
-    const oauthUrl = 'https://www.facebook.com/dialog/oauth' +
-      '?client_id=' + encodeURIComponent(appId) +
-      '&redirect_uri=' + encodeURIComponent(redirectUri) +
-      '&scope=whatsapp_business_messaging%2Cwhatsapp_business_management' +
-      '&response_type=code' +
+    const oauthUrl = 'https://business.facebook.com/messaging/whatsapp/onboard/' +
+      '?app_id=' + encodeURIComponent(appId) +
       (configId ? '&config_id=' + encodeURIComponent(configId) : '') +
-      '&state=' + encodeURIComponent(stateParam);
+      '&response_type=code' +
+      '&scope=whatsapp_business_messaging%2Cwhatsapp_business_management' +
+      '&extras=' + encodeURIComponent(extrasParam);
 
     const popup = window.open(oauthUrl, 'meta_oauth', 'width=800,height=700,scrollbars=yes,resizable=yes');
 
@@ -1306,7 +1304,7 @@
       return;
     }
 
-    const apiOrigin = new URL(API_BASE).origin;
+    const META_ALLOWED_ORIGINS = ['https://www.facebook.com', 'https://business.facebook.com'];
     const popupTimeout = setTimeout(function() {
       window.removeEventListener('message', onOauthMessage);
       btn.disabled = false;
@@ -1315,17 +1313,42 @@
     }, 300000);
 
     function onOauthMessage(event) {
-      if (event.origin !== apiOrigin) return;
-      const data = event.data;
-      if (!data || typeof data !== 'object' || (!data.code && !data.error)) return;
+      if (!META_ALLOWED_ORIGINS.includes(event.origin)) return;
+
+      // Meta may send data as a JSON string or an object
+      var msg = event.data;
+      if (typeof msg === 'string') {
+        try { msg = JSON.parse(msg); } catch (e) { return; }
+      }
+      if (!msg || typeof msg !== 'object') return;
+
+      // Meta WhatsApp Embedded Signup LaunchBridge format:
+      // { type: "WA_EMBEDDED_SIGNUP", event: "FINISH"|"CANCEL"|"ERROR", data: { code, phone_number_id, waba_id } }
+      var code = null;
+      var error = null;
+      if (msg.type === 'WA_EMBEDDED_SIGNUP') {
+        if (msg.event === 'FINISH') {
+          code = (msg.data && msg.data.code) ? msg.data.code : null;
+        } else if (msg.event === 'CANCEL') {
+          error = 'Meta signup was cancelled.';
+        } else if (msg.event === 'ERROR') {
+          error = (msg.data && msg.data.error_message) ? msg.data.error_message : 'Meta signup failed.';
+        }
+      } else {
+        // Fallback for direct code/error at message root
+        code = msg.code || null;
+        error = msg.error || null;
+      }
+
+      if (!code && !error) return;
 
       clearTimeout(popupTimeout);
       window.removeEventListener('message', onOauthMessage);
 
-      if (data.error) {
+      if (error) {
         btn.disabled = false;
         spinner.classList.remove('visible');
-        showEmbeddedStatus('error', '✗ ' + data.error);
+        showEmbeddedStatus('error', '✗ ' + error);
         return;
       }
 
@@ -1334,7 +1357,7 @@
       fetch(API_BASE + '/v1/auth/meta/callback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email, app_name: 'My App', code: data.code }),
+        body: JSON.stringify({ email: email, app_name: 'My App', code: code }),
       })
         .then(function(res) { return res.json().then(function(d) { return { res: res, data: d }; }); })
         .then(function(result) {
