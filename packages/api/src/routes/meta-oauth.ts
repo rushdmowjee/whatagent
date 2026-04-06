@@ -166,7 +166,9 @@ metaOauthRouter.post('/callback', callbackLimiter, async (req: Request, res: Res
 
     if (!wabaId && !directPhoneNumberId) {
       console.error(`${logPrefix} step3 FAILED no WABA or phone IDs in granular_scopes. scopes=${JSON.stringify(debugResp.data.data?.scopes)}`);
-      res.status(422).json({ error: 'No WhatsApp Business Account found. Complete WhatsApp Business setup and try again.' });
+      res.status(422).json({
+        error: 'No WhatsApp Business Account found. In the Meta popup, create or select a Business Portfolio and WhatsApp Business Account, then try again. If Meta never offers that option, the embedded signup configuration likely needs to be fixed in the Meta App Dashboard.',
+      });
       return;
     }
     if (wabaId) {
@@ -201,7 +203,9 @@ metaOauthRouter.post('/callback', callbackLimiter, async (req: Request, res: Res
       const phone = phoneResp.data.data?.[0];
       if (!phone) {
         console.error(`${logPrefix} step4 FAILED no phone numbers found`);
-        res.status(422).json({ error: 'No phone numbers found in your WhatsApp Business Account.' });
+        res.status(422).json({
+          error: 'No phone numbers found in your WhatsApp Business Account. Finish adding a number in the Meta signup flow, then try again.',
+        });
         return;
       }
       phoneNumberId = phone.id;

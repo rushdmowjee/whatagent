@@ -1288,10 +1288,12 @@
     const configId = embeddedSignupConfig.config_id;
     const extrasParam = JSON.stringify({ setup: {}, sessionInfoVersion: 2 });
 
+    const callbackUrl = API_BASE + '/v1/auth/meta/callback';
     const oauthUrl = 'https://business.facebook.com/messaging/whatsapp/onboard/' +
       '?app_id=' + encodeURIComponent(appId) +
       (configId ? '&config_id=' + encodeURIComponent(configId) : '') +
       '&response_type=code' +
+      '&redirect_uri=' + encodeURIComponent(callbackUrl) +
       '&scope=whatsapp_business_messaging%2Cwhatsapp_business_management' +
       '&extras=' + encodeURIComponent(extrasParam);
 
@@ -1305,6 +1307,10 @@
     }
 
     const META_ALLOWED_ORIGINS = ['https://www.facebook.com', 'https://business.facebook.com'];
+    const trustedOrigins = new Set(META_ALLOWED_ORIGINS);
+    try {
+      trustedOrigins.add(new URL(API_BASE).origin);
+    } catch {}
     const popupTimeout = setTimeout(function() {
       window.removeEventListener('message', onOauthMessage);
       btn.disabled = false;
@@ -1313,7 +1319,7 @@
     }, 300000);
 
     function onOauthMessage(event) {
-      if (!META_ALLOWED_ORIGINS.includes(event.origin)) return;
+      if (!trustedOrigins.has(event.origin)) return;
 
       // Meta may send data as a JSON string or an object
       var msg = event.data;
